@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await apiPharma.post("auth/login", {
+      const res = await apiPharma.post("/api/auth/login", {
         email: email,         // 👈 backend espera "email"
         contraseña: contraseña,  // 👈 backend espera "contraseña"
       });
@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setError("Credenciales inválidas");
       }
     } catch (err: any) {
-      console.log("Error en login:", err.response?.data || err.message);
+      // console.log("Error en login:", err.response?.data || err.message);
       setError("Error en el inicio de sesión");
       setIsLogged(false);
     } finally {

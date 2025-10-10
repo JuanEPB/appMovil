@@ -1,33 +1,21 @@
-import React from "react";
-import { TouchableOpacity, Text, StyleSheet } from "react-native";
 
-interface Props {
-  title: string;
-  onPress: () => void;
-}
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
 
-export const Button = ({ title, onPress }: Props)  => {
+export const Button = ({ title, onPress, loading=false }: { title: string; onPress: () => void; loading?: boolean; }) => {
   return (
-    <TouchableOpacity style={styles.button} onPress={onPress}>
-      <Text style={styles.text}>{title}</Text>
+    <TouchableOpacity style={styles.btn} onPress={onPress} disabled={loading}>
+      {loading ? <ActivityIndicator /> : <Text style={styles.text}>{title}</Text>}
     </TouchableOpacity>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  button: {
-    backgroundColor: "#1abc9c",
-    padding: 15,
+  btn: {
+    backgroundColor: '#0EA5E9',
+    paddingVertical: 12,
     borderRadius: 12,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
+    alignItems: 'center',
   },
-  text: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
+  text: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });

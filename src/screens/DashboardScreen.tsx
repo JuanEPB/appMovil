@@ -1,47 +1,277 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
-import { appTheme } from "../themes/appTheme";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  Dimensions,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+} from "react-native";
+import { BarChart, PieChart } from "react-native-chart-kit";
+import { useStats } from "../hooks/useStats";
+import { useTheme } from "../context/ThemeContext";
+
+const screenWidth = Dimensions.get("window").width - 32;
 
 export const DashboardScreen = () => {
+  const { theme } = useTheme();
+  const { stats, loading, error } = useStats();
+
+  const styles = getStyles(theme);
+
+  if (loading)
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+
+  if (error)
+    return (
+      <View style={styles.loaderContainer}>
+        <Text style={[styles.subtitle, { color: theme.colors.danger }]}>{error}</Text>
+      </View>
+    );
+
+  if (!stats)
+    return (
+      <View style={styles.loaderContainer}>
+        <Text style={styles.subtitle}>No hay datos disponibles</Text>
+      </View>
+    );
+
+  // 🔹 Preparamos los datos para las gráficas
+  const categorias = Object.entries(stats.porCategoria).map(([key, value], i) => ({
+    name: key,
+    population: value,
+    color: [
+      theme.colors.primary,
+      "#4CAF50",
+      "#FFC107",
+      "#00897B",
+      "#5E35B1",
+
+    ][i % 5],
+    legendFontColor: theme.colors.text,
+    legendFontSize: 13,
+  }));
+
+  const chartConfig = {
+    backgroundGradientFrom: theme.colors.card,
+    backgroundGradientTo: theme.colors.card,
+    decimalPlaces: 0,
+    color: (opacity = 1) =>
+      `${theme.colors.primary}${Math.floor(opacity * 255).toString(16)}`,
+    labelColor: () => theme.colors.text,
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-      <Text style={styles.title}>Dashboard</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 30 }}
+      >
+        {/* 🩺 Encabezado */}
+        <Text style={styles.title}>Panel de Control</Text>
+        <Text style={styles.subtitle}>
+          Bienvenido a tu panel de control de PharmaControl
+        </Text>
 
-      <View style={[styles.card, { borderLeftColor: appTheme.colors.primary }]}>
-        <Text style={styles.cardTitle}>Medicamentos en stock</Text>
-        <Text style={styles.cardValue}>1250</Text>
-      </View>
+        {/* 🔹 Tarjetas resumen */}
+        <View style={styles.cardsRow}>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+            ]}
+          >
+            <Text style={styles.cardTitle}>Medicamentos Totales</Text>
+            <Text style={[styles.cardValue, { color: theme.colors.primary }]}>
+              {stats.total}
+            </Text>
+          </View>
 
-      <View style={[styles.card, { borderLeftColor: appTheme.colors.warning }]}>
-        <Text style={styles.cardTitle}>Por caducar</Text>
-        <Text style={styles.cardValue}>12</Text>
-      </View>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
+            ]}
+          >
+            <Text style={styles.cardTitle}>Por Caducar</Text>
+            <Text style={[styles.cardValue, { color: theme.colors.warning }]}>
+              {stats.porCaducar}
+            </Text>
+          </View>
 
-      <View style={[styles.card, { borderLeftColor: appTheme.colors.danger }]}>
-        <Text style={styles.cardTitle}>Stock crítico</Text>
-        <Text style={styles.cardValue}>8</Text>
-      </View>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor:theme.colors.card, borderColor: theme.colors.border },
+            ]}
+          >
+            <Text style={styles.cardTitle}>Caducados</Text>
+            <Text style={[styles.cardValue, { color: "#D32F2F" }]}>
+              {stats.caducados}
+            </Text>
+          </View>
+        </View>
+
+        {/* 📊 Gráfica de pastel */}
+        <View style={[styles.chartContainer, { backgroundColor: theme.colors.card }]}>
+          <Text style={styles.sectionTitle}>Distribución por Categoría</Text>
+          <PieChart
+            data={categorias}
+            width={screenWidth * 0.9}
+            height={220}
+            accessor={"population"}
+            backgroundColor={"transparent"}
+            paddingLeft={"60"}
+            hasLegend={false}
+            chartConfig={chartConfig}
+            center={[0, 0]}
+          />
+          <View style={styles.legendContainer}>
+            {categorias.map((item, i) => (
+              <View key={i} style={styles.legendItem}>
+                <View
+                  style={[styles.legendColor, { backgroundColor: item.color }]}
+                />
+                <Text style={[styles.legendText, { color: theme.colors.text }]}>
+                  {item.population} {item.name}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* 📈 Gráfica de barras */}
+        <View style={[styles.chartContainer, { backgroundColor: theme.colors.card }]}>
+          <Text style={styles.sectionTitle}>Resumen General</Text>
+          <BarChart
+            data={{
+              labels: ["Total", "Por Caducar", "Caducados"],
+              datasets: [
+                { data: [stats.total, stats.porCaducar, stats.caducados] },
+              ],
+            }}
+            width={screenWidth}
+            height={220}
+            yAxisLabel=""
+            yAxisSuffix=""
+            chartConfig={chartConfig}
+            style={styles.barChart}
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: appTheme.colors.background, padding: 16 },
-  title: { fontSize: 24, fontWeight: "bold", marginBottom: 16, color: appTheme.colors.text },
-  card: {
-    backgroundColor: appTheme.colors.card,
-    padding: 20,
-    borderRadius: appTheme.radius.md,
-    marginBottom: 16,
-    borderLeftWidth: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  cardTitle: { fontSize: 16, color: appTheme.colors.muted },
-  cardValue: { fontSize: 22, fontWeight: "bold", color: appTheme.colors.text, marginTop: 4 },
-});
+// 🎨 Estilos dinámicos basados en el tema actual
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+      paddingTop: 40,
+    },
+    scrollContainer: {
+      flex: 1,
+      paddingHorizontal: 16,
+      paddingTop: 10,
+    },
+    loaderContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: theme.colors.background,
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: "800",
+      color: theme.colors.primary,
+      marginBottom: 4,
+      textAlign: "center",
+    },
+    subtitle: {
+      fontSize: 15,
+      color: theme.colors.text,
+      marginBottom: 20,
+      textAlign: "center",
+    },
+    cardsRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 20,
+    },
+    card: {
+      flex: 1,
+      borderRadius: 18,
+      borderWidth: 1,
+      paddingVertical: 16,
+      paddingHorizontal: 10,
+      marginHorizontal: 4,
+      shadowColor: "#000",
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      elevation: 3,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    cardTitle: {
+      fontSize: 14,
+      color: theme.colors.text,
+      textAlign: "center",
+      marginBottom: 6,
+    },
+    cardValue: {
+      fontSize: 28,
+      fontWeight: "800",
+    },
+    chartContainer: {
+      marginBottom: 24,
+      borderRadius: 20,
+      paddingVertical: 14,
+      paddingHorizontal: 10,
+      shadowColor: "#000",
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    legendContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      marginTop: 10,
+      gap: 8,
+    },
+    legendItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginHorizontal: 6,
+      marginVertical: 4,
+    },
+    legendColor: {
+      width: 14,
+      height: 14,
+      borderRadius: 4,
+      marginRight: 6,
+    },
+    legendText: {
+      fontSize: 14,
+      fontWeight: "500",
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 10,
+      color: theme.colors.text,
+      textAlign: "center",
+    },
+    barChart: {
+      borderRadius: 16,
+      marginVertical: 8,
+    },
+  });
