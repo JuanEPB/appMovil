@@ -1,51 +1,114 @@
-
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
+import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ScrollView } from "react-native";
+import { useTheme } from "../context/ThemeContext";
+import axios from "axios";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { HeaderMenu } from "../components/HeaderMenu";
 
 export const ChatScreen = () => {
-  const [messages, setMessages] = useState([{ id: '1', from: 'bot', text: 'Hola 👋 ¿En qué puedo ayudarte?' }]);
-  const [input, setInput] = useState('');
   const { theme } = useTheme();
+  const styles = getStyles(theme);
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!input.trim()) return;
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now().toString(), from: 'user', text: input },
-      { id: Date.now() + '_bot', from: 'bot', text: 'Respuesta simulada 🤖' },
-    ]);
-    setInput('');
+    const newMsg = { role: "user", content: input };
+    setMessages([...messages, newMsg]);
+    setInput("");
+
+    try {
+      const res = await axios.post("https://tuapi.com/api/chat", { message: input });
+      const aiMsg = { role: "ai", content: res.data.response };
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (e) {
+      setMessages((prev) => [...prev, { role: "ai", content: "⚠️ Error de conexión con la IA." }]);
+    }
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={styles.container}>
+        <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 50 }}
+        >
+        <HeaderMenu/>
       <FlatList
         data={messages}
-        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <View style={[styles.bubble, item.from === 'user' ? styles.userBubble : styles.botBubble]}>
-            <Text style={{ color: item.from === 'user' ? '#fff' : theme.colors.text }}>{item.text}</Text>
+          <View
+            style={[
+              styles.msg,
+              item.role === "user" ? styles.userMsg : styles.aiMsg,
+            ]}
+          >
+            <Text style={styles.msgText}>{item.content}</Text>
           </View>
         )}
+        keyExtractor={(_, i) => i.toString()}
         contentContainerStyle={{ padding: 10 }}
       />
-      <View style={[styles.inputContainer, { backgroundColor: theme.colors.card }]}>
-        <TextInput style={styles.input} value={input} onChangeText={setInput} placeholder="Escribe tu mensaje..." />
+
+      <View style={styles.inputRow}>
+        <TextInput
+          style={styles.input}
+          placeholder="Escribe tu mensaje..."
+          placeholderTextColor={theme.colors.textMuted}
+          value={input}
+          onChangeText={setInput}
+        />
         <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
-          <Text style={{ color: '#fff', fontWeight: 'bold' }}>➤</Text>
+          <Text style={{ color: "#fff", fontWeight: "bold" }}>Enviar</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10 },
-  bubble: { padding: 12, marginVertical: 6, borderRadius: 12, maxWidth: '75%' },
-  userBubble: { backgroundColor: '#0EA5E9', alignSelf: 'flex-end' },
-  botBubble: { backgroundColor: '#ecf0f1', alignSelf: 'flex-start' },
-  inputContainer: { flexDirection: 'row', borderRadius: 20, paddingHorizontal: 10, alignItems: 'center', margin: 10 },
-  input: { flex: 1, padding: 10 },
-  sendBtn: { backgroundColor: '#0EA5E9', padding: 10, borderRadius: 50, marginLeft: 5 },
-});
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    msg: {
+      marginVertical: 6,
+      padding: 10,
+      borderRadius: 10,
+      maxWidth: "80%",
+    },
+    userMsg: {
+      alignSelf: "flex-end",
+      backgroundColor: theme.colors.primary,
+    },
+    aiMsg: {
+      alignSelf: "flex-start",
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    msgText: { color: theme.colors.text },
+    inputRow: {
+      flexDirection: "row",
+      padding: 10,
+      borderTopWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.card,
+    },
+    input: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      color: theme.colors.text,
+    },
+    sendBtn: {
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: 16,
+      marginLeft: 8,
+      borderRadius: 10,
+      justifyContent: "center",
+    },
+  });

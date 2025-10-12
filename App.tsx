@@ -5,6 +5,7 @@ import { AuthProvider } from './src/hooks/useAuth';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import StackNavigator from './src/navigation/stackNavigator';
+import { navigationRef } from './src/navigation/NavigationService';
 
 export default function App() {
   return (
@@ -21,7 +22,7 @@ export default function App() {
 function MainApp() {
   const { theme } = useTheme();
   return (
-    <NavigationContainer theme={theme}>
+    <NavigationContainer theme={theme} ref={navigationRef}>
       <StatusBar style={theme.dark ? 'light' : 'dark'} />
       <StackNavigator />
     </NavigationContainer>

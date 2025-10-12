@@ -31,11 +31,33 @@ export const TabNavigator = () => {
         },
       })}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Documentos" component={DocumentsScreen} />
-      <Tab.Screen name="Chat" component={ChatScreen} />
-      <Tab.Screen name="Perfil" component={ProfileScreen} />
-      <Tab.Screen name="Ajustes" component={SettingsScreen} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} 
+      options={{
+          headerShown: false,
+          
+        }}/>
+      <Tab.Screen name="Documentos" component={DocumentsScreen} 
+      options={{
+          headerShown: false,
+          
+        }}/>
+      <Tab.Screen name="Chat" component={ChatScreen} 
+      options={{
+          headerShown: false,
+          
+        }}/>
+      <Tab.Screen name="Perfil" component={ProfileScreen} 
+      options={{
+          headerShown: false,
+          
+        }}
+      />
+      <Tab.Screen name="Ajustes" component={SettingsScreen} 
+      options={{
+          headerShown: false,
+          
+        }}
+        />
     </Tab.Navigator>
   );
 };

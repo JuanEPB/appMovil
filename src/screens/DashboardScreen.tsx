@@ -6,17 +6,21 @@ import {
   Dimensions,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
 } from "react-native";
 import { BarChart, PieChart } from "react-native-chart-kit";
 import { useStats } from "../hooks/useStats";
 import { useTheme } from "../context/ThemeContext";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { HeaderMenu } from "../components/HeaderMenu";
+
 
 const screenWidth = Dimensions.get("window").width - 32;
+
 
 export const DashboardScreen = () => {
   const { theme } = useTheme();
   const { stats, loading, error } = useStats();
+  const screenHeight = Dimensions.get("window").height;
 
   const styles = getStyles(theme);
 
@@ -67,12 +71,14 @@ export const DashboardScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    
+    <SafeAreaView style={{...styles.safeArea, height: screenHeight}}>
       <ScrollView
-        style={styles.scrollContainer}
+        style={{height: screenHeight}}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 30 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
       >
+        <HeaderMenu/>
         {/* 🩺 Encabezado */}
         <Text style={styles.title}>Panel de Control</Text>
         <Text style={styles.subtitle}>
@@ -127,10 +133,11 @@ export const DashboardScreen = () => {
             height={220}
             accessor={"population"}
             backgroundColor={"transparent"}
-            paddingLeft={"60"}
+            paddingLeft={"15"}
             hasLegend={false}
             chartConfig={chartConfig}
             center={[0, 0]}
+            absolute
           />
           <View style={styles.legendContainer}>
             {categorias.map((item, i) => (
@@ -175,12 +182,12 @@ const getStyles = (theme: any) =>
     safeArea: {
       flex: 1,
       backgroundColor: theme.colors.background,
-      paddingTop: 40,
+
     },
     scrollContainer: {
       flex: 1,
       paddingHorizontal: 16,
-      paddingTop: 10,
+
     },
     loaderContainer: {
       flex: 1,
@@ -193,6 +200,7 @@ const getStyles = (theme: any) =>
       fontWeight: "800",
       color: theme.colors.primary,
       marginBottom: 4,
+      marginTop: 10,
       textAlign: "center",
     },
     subtitle: {
@@ -239,6 +247,7 @@ const getStyles = (theme: any) =>
       shadowOpacity: 0.05,
       shadowRadius: 6,
       elevation: 2,
+      alignItems: "center",
     },
     legendContainer: {
       flexDirection: "row",

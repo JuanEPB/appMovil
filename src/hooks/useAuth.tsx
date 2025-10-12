@@ -1,3 +1,4 @@
+// src/context/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiPharma } from "../api/apiPharma";
@@ -12,6 +13,7 @@ interface AuthContextProps {
   error: string | null;
   login: (data: LoginParams) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (updatedData: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextProps>({} as AuthContextProps);
@@ -23,7 +25,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Cargar sesión guardada
   useEffect(() => {
     const loadSession = async () => {
       const savedToken = await AsyncStorage.getItem("token");
@@ -43,15 +44,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setError(null);
     try {
       const res = await apiPharma.post("/api/auth/login", {
-        email: email,         // 👈 backend espera "email"
-        contraseña: contraseña,  // 👈 backend espera "contraseña"
+        email,
+        contraseña,
       });
 
-      console.log("Respuesta login:", res.data); // 👀 debug
-
       if (res.status === 201 && res.data.accessToken) {
-        const jwt = res.data.accessToken; // 👈 backend devuelve accessToken
-        const usuario = res.data.user;    // 👈 backend devuelve user
+        const jwt = res.data.accessToken;
+        const usuario = res.data.user;
 
         await AsyncStorage.setItem("token", jwt);
         await AsyncStorage.setItem("user", JSON.stringify(usuario));
@@ -63,7 +62,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setError("Credenciales inválidas");
       }
     } catch (err: any) {
-      // console.log("Error en login:", err.response?.data || err.message);
       setError("Error en el inicio de sesión");
       setIsLogged(false);
     } finally {
@@ -73,15 +71,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // 🔹 Logout
   const logout = async () => {
-    await AsyncStorage.removeItem("token");
-    await AsyncStorage.removeItem("user");
+    await AsyncStorage.multiRemove(["token", "user"]);
     setToken(null);
     setUser(null);
     setIsLogged(false);
   };
 
+  // 🔹 Update user info
+  const updateUser = async (updatedData: Partial<User>) => {
+    if (!user) return;
+
+    const updatedUser = { ...user, ...updatedData };
+    await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, isLogged, isLoading, error, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, isLogged, isLoading, error, login, logout, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

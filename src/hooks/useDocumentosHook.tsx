@@ -4,6 +4,8 @@ import { File, Directory, Paths } from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiPharma } from "../api/apiPharma";
 import { DocumentoBase, VentaData } from "../interfaces/interface";
+import { PermissionsAndroid, Platform } from "react-native";
+
 
 export const useDocuments = () => {
   const [ventas, setVentas] = useState<VentaData[]>([]);
@@ -56,6 +58,36 @@ export const useDocuments = () => {
 
     fetchDocuments();
   }, []);
+  const requestStoragePermission = async () => {
+  if (Platform.OS === "android") {
+    try {
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+      ]);
+
+      if (
+        granted["android.permission.READ_EXTERNAL_STORAGE"] === PermissionsAndroid.RESULTS.GRANTED &&
+        granted["android.permission.WRITE_EXTERNAL_STORAGE"] === PermissionsAndroid.RESULTS.GRANTED
+      ) {
+        console.log("✅ Permisos de almacenamiento concedidos");
+        return true;
+      } else {
+        console.warn("⚠️ Permisos de almacenamiento denegados");
+        Alert.alert(
+          "Permiso requerido",
+          "Debes otorgar permisos de almacenamiento para guardar los archivos."
+        );
+        return false;
+      }
+    } catch (err) {
+      console.warn("❌ Error solicitando permisos:", err);
+      return false;
+    }
+  } else {
+    return true; // En iOS no se necesitan
+  }
+};
 
 // 🧩 Crear carpeta si no existe
 const ensureDirectoryExists = async (baseDir: Directory, name: string) => {
@@ -101,6 +133,8 @@ const downloadAndOpenFile = async (id: string, filename: string) => {
 // 🔹 Guardar archivo permanentemente (en Documentos)
 const downloadFile = async (id: string, filename: string) => {
   try {
+    const hasPermission = await requestStoragePermission();
+    if (!hasPermission) return;
     const token = await AsyncStorage.getItem("token");
     const url = `${apiPharma.defaults.baseURL}/api/documentos/descargar/${id}`;
 

@@ -5,6 +5,7 @@ import { LoginScreen } from '../screens/LoginScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { TabNavigator } from '../navigation/TabNavigator';
 import { useTheme } from '../context/ThemeContext'; // ✅ usa tu contexto
+import { DrawerNavigator } from './drawerNavigator';
 
 const Stack = createNativeStackNavigator();
 
@@ -19,12 +20,27 @@ export default function StackNavigator() {
         headerTitleStyle: { color: theme.colors.text },
         headerTintColor: theme.colors.text,
         contentStyle: { backgroundColor: theme.colors.background },
+        headerShadowVisible: false,
+        animation: 'slide_from_right',
+        orientation: 'portrait',
+        gestureEnabled: true,
+        gestureDirection: 'horizontal',
+        headerTitleAlign: 'center',
+
       }}
     >
       {isLogged ? (
-        <Stack.Screen name="Home" component={TabNavigator} />
+        <Stack.Screen name="Home" component={DrawerNavigator} 
+        options={{
+          headerShown: false,
+          
+        }}/>
       ) : (
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} 
+        options={{
+          headerShown: false,
+          
+        }}/>
       )}
     </Stack.Navigator>
   );
