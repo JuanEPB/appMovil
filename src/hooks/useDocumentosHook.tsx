@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { Alert } from "react-native";
-import { File, Directory, Paths } from "expo-file-system";
+import { Alert, Platform, PermissionsAndroid } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import { apiPharma } from "../api/apiPharma";
 import { DocumentoBase, VentaData } from "../interfaces/interface";
-import { PermissionsAndroid, Platform } from "react-native";
-
 
 export const useDocuments = () => {
   const [ventas, setVentas] = useState<VentaData[]>([]);
@@ -58,104 +57,112 @@ export const useDocuments = () => {
 
     fetchDocuments();
   }, []);
-  const requestStoragePermission = async () => {
-  if (Platform.OS === "android") {
-    try {
-      const granted = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
-      ]);
 
-      if (
-        granted["android.permission.READ_EXTERNAL_STORAGE"] === PermissionsAndroid.RESULTS.GRANTED &&
-        granted["android.permission.WRITE_EXTERNAL_STORAGE"] === PermissionsAndroid.RESULTS.GRANTED
-      ) {
-        console.log("✅ Permisos de almacenamiento concedidos");
-        return true;
-      } else {
-        console.warn("⚠️ Permisos de almacenamiento denegados");
-        Alert.alert(
-          "Permiso requerido",
-          "Debes otorgar permisos de almacenamiento para guardar los archivos."
-        );
+  // 🔒 Pedir permisos (Android)
+  const requestStoragePermission = async () => {
+    if (Platform.OS === "android") {
+      try {
+        const granted = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+        ]);
+
+        if (
+          granted["android.permission.READ_EXTERNAL_STORAGE"] ===
+            PermissionsAndroid.RESULTS.GRANTED &&
+          granted["android.permission.WRITE_EXTERNAL_STORAGE"] ===
+            PermissionsAndroid.RESULTS.GRANTED
+        ) {
+          console.log("✅ Permisos de almacenamiento concedidos");
+          return true;
+        } else {
+          Alert.alert(
+            "Permiso requerido",
+            "Debes otorgar permisos de almacenamiento para guardar los archivos."
+          );
+          return false;
+        }
+      } catch (err) {
+        console.warn("❌ Error solicitando permisos:", err);
         return false;
       }
-    } catch (err) {
-      console.warn("❌ Error solicitando permisos:", err);
-      return false;
     }
-  } else {
-    return true; // En iOS no se necesitan
-  }
-};
+    return true;
+  };
 
-// 🧩 Crear carpeta si no existe
-const ensureDirectoryExists = async (baseDir: Directory, name: string) => {
-  try {
-    const subDir = new Directory(baseDir, name);
-    subDir.list(); // Esto lanza si no existe
-    console.log("📂 Carpeta existente:", subDir.uri);
-    return subDir;
-  } catch {
-    console.log("📁 Creando carpeta:", name);
-    const newDir = baseDir.createDirectory(name);
-    console.log("✅ Carpeta creada:", newDir.uri);
-    return newDir;
-  }
-};
+  // 📁 Asegurar carpeta
+  const ensureDirectoryExists = async (dirUri: string) => {
+    const info = await FileSystem.getInfoAsync(dirUri);
+    if (!info.exists) {
+      await FileSystem.makeDirectoryAsync(dirUri, { intermediates: true });
+      console.log("📁 Carpeta creada:", dirUri);
+    }
+  };
 
-// 🔹 Descargar y abrir archivo temporalmente
-const downloadAndOpenFile = async (id: string, filename: string) => {
-  try {
-    const token = await AsyncStorage.getItem("token");
-    const url = `${apiPharma.defaults.baseURL}/api/documentos/descargar/${id}`;
+  // 🔹 Descargar y abrir archivo temporalmente
+  const downloadAndOpenFile = async (id: string, filename: string) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const url = `${apiPharma.defaults.baseURL}/api/documentos/descargar/${id}`;
+      const dirUri = FileSystem.cacheDirectory + "pharma_temp/";
+      await ensureDirectoryExists(dirUri);
 
-    const baseDir = new Directory(Paths.cache);
-    const dir = await ensureDirectoryExists(baseDir, "pharma_temp");
+      const fileUri = dirUri + filename;
+      console.log("📡 Descargando:", url);
 
-    console.log("📡 Descargando temporal:", url);
+      const res = await FileSystem.downloadAsync(url, fileUri, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    const downloaded = await File.downloadFileAsync(url, dir, {
-      headers: { Authorization: `Bearer ${token}` },
-      idempotent: true,
-    });
+      console.log("✅ Archivo descargado:", res.uri);
 
-    console.log("✅ Archivo descargado:", downloaded.uri);
-    Alert.alert("✅ Descargado", `Guardado en:\n${downloaded.uri}`);
-    setOpenedFile(downloaded.uri);
-    return downloaded.uri;
-  } catch (error) {
-    console.error("❌ Error descargando archivo:", error);
-    Alert.alert("Error", "No se pudo descargar el archivo");
-  }
-};
+      // Abrir si es PDF
+      if (res.headers["Content-Type"]?.includes("application/pdf")) {
+        setOpenedFile(res.uri);
+      } else if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(res.uri);
+      }
 
-// 🔹 Guardar archivo permanentemente (en Documentos)
-const downloadFile = async (id: string, filename: string) => {
-  try {
-    const hasPermission = await requestStoragePermission();
-    if (!hasPermission) return;
-    const token = await AsyncStorage.getItem("token");
-    const url = `${apiPharma.defaults.baseURL}/api/documentos/descargar/${id}`;
+      Alert.alert("Descarga completa", `Archivo listo: ${filename}`);
+      return res.uri;
+    } catch (error) {
+      console.error("❌ Error descargando archivo:", error);
+      Alert.alert("Error", "No se pudo descargar el archivo");
+    }
+  };
 
-    const baseDir = new Directory(Paths.document);
-    const dir = await ensureDirectoryExists(baseDir, "pharma_docs");
+  // 🔹 Descargar y guardar en Documentos
+  const downloadFile = async (id: string, filename: string) => {
+    try {
+      const hasPermission = await requestStoragePermission();
+      if (!hasPermission) return;
 
-    console.log("💾 Guardando archivo:", url);
+      const token = await AsyncStorage.getItem("token");
+      const url = `${apiPharma.defaults.baseURL}/api/documentos/descargar/${id}`;
+      const dirUri = FileSystem.documentDirectory + "pharma_docs/";
+      await ensureDirectoryExists(dirUri);
 
-    const downloaded = await File.downloadFileAsync(url, dir, {
-      headers: { Authorization: `Bearer ${token}` },
-      idempotent: true,
-    });
+      const fileUri = dirUri + filename;
+      console.log("💾 Guardando archivo en:", fileUri);
 
-    console.log("✅ Archivo guardado:", downloaded.uri);
-    Alert.alert("💾 Archivo guardado", `Se guardó en:\n${downloaded.uri}`);
-    return downloaded.uri;
-  } catch (error) {
-    console.error("❌ Error guardando archivo:", error);
-    Alert.alert("Error", "No se pudo guardar el archivo");
-  }
-};
+      const res = await FileSystem.downloadAsync(url, fileUri, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log("✅ Archivo guardado:", res.uri);
+
+      Alert.alert("Archivo guardado", `Se guardó en:\n${res.uri}`);
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(res.uri);
+      }
+
+      return res.uri;
+    } catch (error) {
+      console.error("❌ Error guardando archivo:", error);
+      Alert.alert("Error", "No se pudo guardar el archivo");
+    }
+  };
 
   const closeViewer = () => setOpenedFile(null);
 

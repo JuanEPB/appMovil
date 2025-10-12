@@ -50,6 +50,7 @@ export interface DetalleVenta {
   medicamento: Medicamento;
   cantidad: number;
   precioUnitario: number;
+  total: number;
 }
 
 export interface UsuarioVenta {
