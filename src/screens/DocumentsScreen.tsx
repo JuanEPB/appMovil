@@ -485,7 +485,7 @@ const handleDownload = async (id: string, filename: string) => {
                     ]}
                     onPress={() => setSelectedVenta(v)}
                   >
-                    <Text style={styles.buttonText}>👁️ Ver ticket</Text>
+                    <Text style={styles.buttonText}>Ver ticket</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -500,7 +500,7 @@ const handleDownload = async (id: string, filename: string) => {
                     {downloading === v._id ? (
                       <ActivityIndicator color="#fff" size="small" />
                     ) : (
-                      <Text style={styles.buttonText}>💾 Guardar</Text>
+                      <Text style={styles.buttonText}>Guardar</Text>
                     )}
                   </TouchableOpacity>
                 </View>

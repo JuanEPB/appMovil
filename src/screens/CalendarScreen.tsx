@@ -73,7 +73,7 @@ export const CalendarScreen = () => {
              <LinearGradient colors={[theme.colors.primary, "#5AB4F8"]} style={styles.header}>
                
                <Text style={styles.headerTitle}>Calendario</Text>
-               <Text style={styles.headerSubtitle}>Consulta, descarga y visualiza tus reportes</Text>
+               <Text style={styles.headerSubtitle}>Consulta y Agenda tus fechas</Text>
              </LinearGradient>
            </Fade>
    

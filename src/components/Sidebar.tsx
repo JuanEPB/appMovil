@@ -9,6 +9,7 @@ import {  useStats } from "../hooks/useStats";
 import { useAuth } from "../hooks/useAuth";
 import { User } from '../interfaces/interface';
 
+
 export const Sidebar: React.FC<DrawerContentComponentProps> = (props) => {
   const { theme } = useTheme();
   const go = (name: string) => props.navigation.navigate(name as never);

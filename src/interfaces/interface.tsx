@@ -9,6 +9,7 @@ export interface User {
   apellido: string;
   email: string;
   rol: string;
+  farmacia_id: number;
 }
 
 export interface DocumentoBase {

@@ -4,7 +4,7 @@
     "slug": "pharmacontrol",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.png",
+    "icon": "./assets/logo1.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -22,7 +22,6 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "requestLegacyExternalStorage": true,
       "permissions": [
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
@@ -32,7 +31,16 @@
       "package": "com.anonymous.pharmacontrol"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/logo1.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "18502d9b-4625-4d3a-8787-f9b96b300691"
+      }
+    },
+    "owner": "pharmacontrol",
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
