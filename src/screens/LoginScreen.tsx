@@ -100,7 +100,8 @@ import {
   Dimensions,
   Image,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Alert
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../context/ThemeContext";
@@ -119,7 +120,17 @@ export const LoginScreen = () => {
   const styles = getStyles(theme);
 
   const handleLogin = async () => {
-    await login?.({ email, contraseña: password });
+    // Validación simple
+    if (!email.trim() || !password.trim()) {
+      Alert.alert("Error", "Todos los campos son obligatorios");
+      return;
+    }
+
+    try {
+      await login?.({ email, contraseña: password });
+    } catch (error) {
+      Alert.alert("Error", "Usuario o contraseña incorrectos");
+    }
   };
 
   return (

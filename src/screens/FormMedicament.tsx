@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Alert } from "react-native"; 
 import {
   View,
   Text,
@@ -9,6 +10,7 @@ import {
   Platform,
   ScrollView,
   Dimensions,
+  
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -68,36 +70,43 @@ export const FormMedicament = () => {
     fetchData();
   }, []);
 
-  const submit = async () => {
-    try {
-      setSaving(true);
-      const token = await AsyncStorage.getItem("token");
-      if (!token) throw new Error("No token");
+    const submit = async () => {
+      try {
+        
+          if (!nombre.trim() || !lote.trim() || !stock.trim() || !caducidad.trim() || !categoriaId || !proveedorId) {
+    Alert.alert("Error", "Todos los campos son obligatorios");
+    return;
+  }
+        setSaving(true);
+        
+        const token = await AsyncStorage.getItem("token");
+        if (!token) throw new Error("No token");
 
-      const payload = {
-        nombre,
-        lote,
-        stock: Number(stock || 0),
-        caducidad,
-        categoriaId,
-        proveedorId,
-      };
+        const payload = {
+          nombre,
+          lote,
+          stock: Number(stock || 0),
+          caducidad,
+          categoriaId,
+          proveedorId,
+        };
 
-      await apiPharma.post("/api/medicamentos/create", payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        await apiPharma.post("/api/medicamentos/create", payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      setOk(true);
-      setTimeout(() => {
-        setOk(false);
-        navigation.navigate("Medicamentos" as never)
-      }, 1600);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
-  };
+        setOk(true);
+        setTimeout(() => {
+          setOk(false);
+          navigation.navigate("Medicamentos" as never)
+        }, 1600);
+      } catch (e) {
+        console.error(e);
+        Alert.alert("Error", "No se pudo registrar el medicamento");
+      } finally {
+        setSaving(false);
+      }
+    };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
