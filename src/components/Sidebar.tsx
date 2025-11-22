@@ -335,7 +335,7 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = ({ navigation }) =
           <TouchableOpacity
             key={item.route}
             style={[styles.navItem, { shadowColor: item.color }]}
-            onPress={() => go(item.route)}
+            onPress={() => navigation.navigate(item.route as never)}
           >
             <Ionicons name={item.icon as any} size={22} color={item.color} style={{ width: 28 }} />
             <Text style={styles.navLabel}>{item.label}</Text>
@@ -379,7 +379,7 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = ({ navigation }) =
           style={{ marginLeft: 12 }}
           onPress={() => {
             logout();
-            props.navigation.closeDrawer();
+            navigation.closeDrawer();
           }}
         >
           <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} />
