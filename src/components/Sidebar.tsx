@@ -72,28 +72,31 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = (props) => {
       </ScrollView>
 
       {/* 👤 Usuario abajo */}
-      <View style={styles.userFooter}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{user?.nombre.charAt(0).toUpperCase()}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.username}>{user?.nombre}</Text>
-          <Text style={styles.userRole}>Gestiona tu inventario</Text>
-        </View>
-        <TouchableOpacity style={{ marginRight: 12 }} onPress={() => go('Settings')}>
-        <Ionicons name="settings-outline" size={20} color={theme.colors.textMuted} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{ marginLeft: 12 }}
-          onPress={() => {
-            logout();
-            props.navigation.closeDrawer();
-          }}
-        >
-          <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} />
-        </TouchableOpacity>
+{/* 👤 Usuario abajo */}
+<View style={styles.userFooter}>
+  <View style={styles.avatar}>
+    <Text style={styles.avatarText}>
+      {((user?.nombre ?? '').charAt(0) || '').toUpperCase()}
+    </Text>
+  </View>
+  <View style={{ flex: 1 }}>
+    <Text style={styles.username}>{user?.nombre ?? 'Usuario'}</Text>
+    <Text style={styles.userRole}>Gestiona tu inventario</Text>
+  </View>
+  <TouchableOpacity style={{ marginRight: 12 }} onPress={() => go('Settings')}>
+    <Ionicons name="settings-outline" size={20} color={theme.colors.textMuted} />
+  </TouchableOpacity>
+  <TouchableOpacity
+    style={{ marginLeft: 12 }}
+    onPress={() => {
+      logout();
+      props.navigation.closeDrawer();
+    }}
+  >
+    <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} />
+  </TouchableOpacity>
+</View>
 
-      </View>
     </SafeAreaView>
   );
 };
