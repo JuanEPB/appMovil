@@ -5,6 +5,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { apiPharma } from "../api/apiPharma";
 import { DocumentoBase, VentaData } from "../interfaces/interface";
+import { isDemoToken, localDb } from "../data/localDb";
 
 export const useDocuments = () => {
   const [ventas, setVentas] = useState<VentaData[]>([]);
@@ -21,6 +22,14 @@ export const useDocuments = () => {
         setLoading(true);
         const token = await AsyncStorage.getItem("token");
         if (!token) throw new Error("No hay token guardado");
+        if (isDemoToken(token)) {
+          const data = await localDb.getDocuments();
+          setVentas(data.ventas);
+          setReportesIA(data.documentos.filter((d) => d.tipoReporte === "IA"));
+          setOtros(data.documentos.filter((d) => d.tipoReporte !== "venta" && d.tipoReporte !== "IA"));
+          setError(null);
+          return;
+        }
 
         const res = await apiPharma.get<DocumentoBase[]>("/api/documentos/listar", {
           headers: { Authorization: `Bearer ${token}` },
@@ -103,6 +112,10 @@ export const useDocuments = () => {
   const downloadAndOpenFile = async (id: string, filename: string) => {
     try {
       const token = await AsyncStorage.getItem("token");
+      if (isDemoToken(token)) {
+        Alert.alert("Archivo demo", `${filename} esta disponible solo como dato local de prueba.`);
+        return null;
+      }
       const url = `${apiPharma.defaults.baseURL}/api/documentos/descargar/${id}`;
       const dirUri = FileSystem.cacheDirectory + "pharma_temp/";
       await ensureDirectoryExists(dirUri);
@@ -138,6 +151,10 @@ export const useDocuments = () => {
       if (!hasPermission) return;
 
       const token = await AsyncStorage.getItem("token");
+      if (isDemoToken(token)) {
+        Alert.alert("Archivo demo", `${filename} esta disponible solo como dato local de prueba.`);
+        return null;
+      }
       const url = `${apiPharma.defaults.baseURL}/api/documentos/descargar/${id}`;
       const dirUri = FileSystem.documentDirectory + "pharma_docs/";
       await ensureDirectoryExists(dirUri);

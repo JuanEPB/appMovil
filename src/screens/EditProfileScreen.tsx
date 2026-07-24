@@ -1,30 +1,30 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
-import { useTheme } from "../context/ThemeContext";
-import { FadeSlideIn as Fade } from "../components/FadeSlideIn";
-import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useAuth } from "../hooks/useAuth";
-import { apiPharma } from "../api/apiPharma";
+import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const { height: H, width: W } = require("react-native").Dimensions.get("window");
+import { apiPharma } from "../api/apiPharma";
+import { useAuth } from "../hooks/useAuth";
+import { useTheme } from "../context/ThemeContext";
+import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
 
 export const EditProfileScreen = () => {
   const { theme } = useTheme();
-  const styles = useMemo(() => getStyles(theme), [theme]);
+  const { width } = useWindowDimensions();
+  const layout = getLayout(width);
+  const styles = useMemo(() => getStyles(theme, layout.isPhone), [theme, layout.isPhone]);
   const navigation = useNavigation<any>();
   const { user, updateUser } = useAuth();
-
   const [nombre, setNombre] = useState(user?.nombre || "");
   const [email, setEmail] = useState(user?.email || "");
   const [saving, setSaving] = useState(false);
@@ -33,8 +33,7 @@ export const EditProfileScreen = () => {
     if (!user) return;
     try {
       setSaving(true);
-      const payload = { nombre, email };
-      const res = await apiPharma.put(`/api/users/update/${user.id}`, payload);
+      const res = await apiPharma.put(`/api/users/update/${user.id}`, { nombre, email });
       if (res.status === 200) {
         await updateUser(res.data);
         navigation.navigate("Profile" as never);
@@ -47,195 +46,164 @@ export const EditProfileScreen = () => {
   };
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: theme.colors.background,
-        height: H,
-        width: W,
-      }}
-    >
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{
-          flex: 1,
-          backgroundColor: theme.colors.background,
-          height: H,
-          width: W,
-        }}
+        style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={[styles.container, { height: H, width: W }]}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.content,
+            webMaxWidthStyle(width),
+            { paddingHorizontal: layout.pagePadding },
+          ]}
         >
-          {/* 🔹 Header con icono de regreso */}
           <TouchableOpacity
             onPress={() => navigation.navigate("Profile" as never)}
             style={styles.backButton}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
           >
-            <Ionicons
-              name="arrow-back"
-              size={22}
-              color={theme.colors.text}
-            />
+            <Ionicons name="arrow-back" size={22} color={theme.colors.text} />
           </TouchableOpacity>
 
-          {/* 🔹 Encabezado */}
-          <Fade>
-            <Text style={styles.title}>Editar Perfil</Text>
-          </Fade>
-
-          {/* 🔹 Avatar editable */}
-          <Fade delay={100}>
-            <View style={styles.avatarContainer}>
-              <TouchableOpacity activeOpacity={0.8}>
-                <Ionicons
-                  name="person-circle-outline"
-                  size={100}
-                  color={theme.colors.primary}
-                />
-                <View style={styles.cameraBadge}>
-                  <Ionicons name="camera-outline" size={18} color="#fff" />
-                </View>
-              </TouchableOpacity>
+          <View style={styles.card}>
+            <View style={styles.header}>
+              <View style={styles.avatar}>
+                <Ionicons name="person" size={44} color="#fff" />
+              </View>
+              <Text style={styles.title}>Editar perfil</Text>
+              <Text style={styles.subtitle}>Actualiza tu nombre y correo de acceso.</Text>
             </View>
-          </Fade>
 
-          {/* 🔹 Campos de texto */}
-          <Fade delay={200}>
-            <Text style={styles.label}>Nombre completo</Text>
-            <TextInput
-              value={nombre}
-              onChangeText={setNombre}
-              style={styles.input}
-              placeholder="Nombre completo"
-              placeholderTextColor={theme.colors.textMuted}
-            />
-          </Fade>
+            <View style={styles.field}>
+              <Text style={styles.label}>Nombre completo</Text>
+              <TextInput
+                value={nombre}
+                onChangeText={setNombre}
+                style={styles.input}
+                placeholder="Nombre completo"
+                placeholderTextColor={theme.colors.textMuted}
+              />
+            </View>
 
-          <Fade delay={300}>
-            <Text style={styles.label}>Correo electrónico</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              keyboardType="email-address"
-              placeholder="Correo electrónico"
-              placeholderTextColor={theme.colors.textMuted}
-            />
-          </Fade>
+            <View style={styles.field}>
+              <Text style={styles.label}>Correo electronico</Text>
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                style={styles.input}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="correo@farmacia.com"
+                placeholderTextColor={theme.colors.textMuted}
+              />
+            </View>
 
-          {/* 🔹 Botón Guardar */}
-          <Fade delay={400}>
             <TouchableOpacity
-              style={[
-                styles.button,
-                {
-                  backgroundColor: theme.colors.primary,
-                  opacity: saving ? 0.6 : 1,
-                },
-              ]}
+              style={[styles.button, { backgroundColor: theme.colors.primary, opacity: saving ? 0.65 : 1 }]}
               onPress={handleSave}
               disabled={saving}
             >
-              <Ionicons name="save-outline" size={22} color="#fff" />
-              <Text style={styles.buttonText}>
-                {saving ? "Guardando..." : "Guardar cambios"}
-              </Text>
+              <Ionicons name="save-outline" size={21} color="#fff" />
+              <Text style={styles.buttonText}>{saving ? "Guardando..." : "Guardar cambios"}</Text>
             </TouchableOpacity>
-          </Fade>
 
-          {/* 🔹 Cancelar */}
-          <Fade delay={450}>
             <TouchableOpacity
-              style={{ alignSelf: "center", marginTop: 16 }}
+              style={styles.cancelButton}
               onPress={() => navigation.navigate("Profile" as never)}
             >
-              <Text style={{ color: theme.colors.textMuted }}>Cancelar</Text>
+              <Text style={styles.cancelText}>Cancelar</Text>
             </TouchableOpacity>
-          </Fade>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
-const getStyles = (theme: any) =>
+const getStyles = (theme: any, isPhone: boolean) =>
   StyleSheet.create({
-    container: {
-      flexGrow: 1,
-      backgroundColor: theme.colors.background,
-      padding: 20,
-      paddingBottom: 40,
+    safeArea: { flex: 1, backgroundColor: theme.colors.background },
+    content: {
+      width: "100%",
+      alignSelf: "center",
+      paddingTop: 18,
+      paddingBottom: 36,
     },
     backButton: {
-      alignSelf: "flex-start",
-      padding: 8,
-      borderRadius: 10,
-      backgroundColor: theme.colors.card,
-      marginBottom: 8,
-      shadowColor: "#000",
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 3,
-    },
-    title: {
-      fontSize: 22,
-      fontWeight: "800",
-      color: theme.colors.primary,
-      textAlign: "center",
-      marginBottom: 16,
-    },
-    avatarContainer: {
+      width: 44,
+      height: 44,
       alignItems: "center",
-      marginTop: 8,
-      marginBottom: 16,
-      position: "relative",
-    },
-    cameraBadge: {
-      position: "absolute",
-      right: 10,
-      bottom: 10,
-      backgroundColor: theme.colors.primary,
-      borderRadius: 20,
-      padding: 6,
-      shadowColor: "#000",
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-      elevation: 4,
-    },
-    label: {
-      color: theme.colors.textMuted,
-      fontSize: 14,
-      marginBottom: 4,
-      marginTop: 8,
-    },
-    input: {
+      justifyContent: "center",
+      borderRadius: 12,
       backgroundColor: theme.colors.card,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      borderRadius: 12,
-      padding: 12,
+      marginBottom: 14,
+    },
+    card: {
+      width: "100%",
+      maxWidth: 640,
+      alignSelf: "center",
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 16,
+      padding: isPhone ? 18 : 24,
+      ...shadow(theme.colors.cardShadow),
+    },
+    header: { alignItems: "center", marginBottom: 20 },
+    avatar: {
+      width: 86,
+      height: 86,
+      borderRadius: 43,
+      backgroundColor: theme.colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 12,
+    },
+    title: {
       color: theme.colors.text,
-      marginBottom: 10,
+      fontSize: isPhone ? 24 : 30,
+      fontWeight: "800",
+      textAlign: "center",
+    },
+    subtitle: {
+      color: theme.colors.textMuted,
+      fontSize: 15,
+      textAlign: "center",
+      lineHeight: 21,
+      marginTop: 4,
+    },
+    field: { marginBottom: 14 },
+    label: {
+      color: theme.colors.textMuted,
+      fontSize: 13,
+      fontWeight: "800",
+      marginBottom: 6,
+    },
+    input: {
+      minHeight: 50,
+      backgroundColor: theme.colors.background,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      color: theme.colors.text,
+      fontSize: 15,
     },
     button: {
+      minHeight: 48,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      paddingVertical: 12,
-      borderRadius: 14,
-      marginTop: 18,
-      shadowColor: "#000",
-      shadowOpacity: 0.1,
-      shadowRadius: 6,
-      elevation: 2,
+      gap: 8,
+      borderRadius: 12,
+      marginTop: 6,
     },
-    buttonText: {
-      color: "#fff",
-      fontWeight: "700",
-      marginLeft: 8,
-      fontSize: 16,
-    },
+    buttonText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+    cancelButton: { alignItems: "center", paddingVertical: 14 },
+    cancelText: { color: theme.colors.textMuted, fontWeight: "700" },
   });

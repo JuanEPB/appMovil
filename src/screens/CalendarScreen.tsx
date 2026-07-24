@@ -1,49 +1,43 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
+  Alert,
   FlatList,
   Platform,
-  Alert,
   StyleSheet,
-  Dimensions,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { Feather } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { HeaderMenu } from "../components/HeaderMenu";
 import { useTheme } from "../context/ThemeContext";
 import { scheduleNotification } from "../utils/notifications";
-import { saveReminder, getReminders } from "../utils/storage";
-import { FadeSlideIn as Fade } from "../components/FadeSlideIn";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { ScrollView } from "react-native-gesture-handler";
-import { HeaderMenu } from "../components/HeaderMenu";
-import { LinearGradient } from "expo-linear-gradient";
-
-const H = Dimensions.get("window").height ;
-const W = Dimensions.get("window").width;
+import { getReminders, saveReminder } from "../utils/storage";
+import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
 
 export const CalendarScreen = () => {
   const { theme } = useTheme();
-  const styles = getStyles(theme);
-
+  const { width } = useWindowDimensions();
+  const layout = getLayout(width);
+  const styles = useMemo(() => getStyles(theme, layout.isPhone), [theme, layout.isPhone]);
   const [date, setDate] = useState<Date>(new Date());
   const [showPicker, setShowPicker] = useState(false);
   const [reminders, setReminders] = useState<any[]>([]);
+
+  const loadReminders = async () => setReminders(await getReminders());
 
   useEffect(() => {
     loadReminders();
   }, []);
 
-  const loadReminders = async () => {
-    const data = await getReminders();
-    setReminders(data);
-  };
-
   const addReminder = async () => {
     try {
       const reminder = {
         id: Date.now().toString(),
-        title: "Revisión de inventario",
+        title: "Revision de inventario",
         body: "Recuerda verificar existencias y lotes.",
         date: date.toISOString(),
       };
@@ -51,172 +45,181 @@ export const CalendarScreen = () => {
       await scheduleNotification(reminder.title, reminder.body, date);
       await saveReminder(reminder);
       await loadReminders();
-
-      Alert.alert("✅ Recordatorio agregado", "Se ha programado la notificación correctamente.");
+      Alert.alert("Recordatorio agregado", "Se programo la notificacion correctamente.");
     } catch (error) {
-      Alert.alert("Error", "No se pudo programar la notificación.");
+      Alert.alert("Error", "No se pudo programar la notificacion.");
       console.error(error);
     }
   };
 
   return (
-       <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
-         <HeaderMenu/>
-         <ScrollView
-           showsVerticalScrollIndicator={false}
-           style={{ height: H, width: W }}
-           contentContainerStyle={{ paddingBottom: 40, paddingHorizontal: 16 }}
-         >
-           
-           {/* 🔹 Header degradado con animación */}
-           <Fade delay={50}>
-             <LinearGradient colors={[theme.colors.primary, "#5AB4F8"]} style={styles.header}>
-               
-               <Text style={styles.headerTitle}>Calendario</Text>
-               <Text style={styles.headerSubtitle}>Consulta y Agenda tus fechas</Text>
-             </LinearGradient>
-           </Fade>
-   
-
-      <Fade delay={100}>
-        <TouchableOpacity
-          style={styles.dateButton}
-          onPress={() => setShowPicker(true)}
-        >
-          <Text style={styles.dateText}>
-            {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </Text>
-        </TouchableOpacity>
-
-        {showPicker && (
-          <DateTimePicker
-            value={date}
-            mode="datetime"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={(event, selectedDate) => {
-              setShowPicker(false);
-              if (selectedDate) setDate(selectedDate);
-            }}
-            minimumDate={new Date()}
-          />
-        )}
-      </Fade>
-
-      <Fade delay={200}>
-        <TouchableOpacity style={styles.addButton} onPress={addReminder}>
-          <Text style={styles.addButtonText}>Programar Recordatorio</Text>
-        </TouchableOpacity>
-      </Fade>
-
-      <Fade delay={300}>
-        <Text style={styles.subtitle}>Próximos Recordatorios</Text>
-      </Fade>
-
+    <SafeAreaView style={styles.safeArea}>
+      <HeaderMenu />
       <FlatList
         data={reminders}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingVertical: 10 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          webMaxWidthStyle(width),
+          { paddingHorizontal: layout.pagePadding },
+        ]}
+        ListHeaderComponent={
+          <>
+            <View style={styles.header}>
+              <Text style={styles.title}>Calendario</Text>
+              <Text style={styles.subtitle}>Agenda revisiones y recordatorios de inventario.</Text>
+            </View>
+
+            <View style={styles.schedulerCard}>
+              <Text style={styles.cardLabel}>Fecha seleccionada</Text>
+              <TouchableOpacity style={styles.dateButton} onPress={() => setShowPicker(true)}>
+                <Feather name="calendar" size={18} color={theme.colors.primary} />
+                <Text style={styles.dateText}>
+                  {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </Text>
+              </TouchableOpacity>
+
+              {showPicker && (
+                <DateTimePicker
+                  value={date}
+                  mode="datetime"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={(_, selectedDate) => {
+                    setShowPicker(false);
+                    if (selectedDate) setDate(selectedDate);
+                  }}
+                  minimumDate={new Date()}
+                />
+              )}
+
+              <TouchableOpacity style={styles.addButton} onPress={addReminder}>
+                <Feather name="bell" size={18} color="#fff" />
+                <Text style={styles.addButtonText}>Programar recordatorio</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.sectionTitle}>Proximos recordatorios</Text>
+          </>
+        }
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyTitle}>Sin recordatorios</Text>
+            <Text style={styles.emptyText}>Programa una fecha para verla aqui.</Text>
+          </View>
+        }
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardBody}>{item.body}</Text>
-            <Text style={styles.cardDate}>
-              {new Date(item.date).toLocaleString()}
-            </Text>
+          <View style={styles.reminderCard}>
+            <View style={styles.reminderIcon}>
+              <Feather name="clock" size={18} color={theme.colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.reminderTitle}>{item.title}</Text>
+              <Text style={styles.reminderBody}>{item.body}</Text>
+              <Text style={styles.reminderDate}>{new Date(item.date).toLocaleString()}</Text>
+            </View>
           </View>
         )}
       />
-      </ScrollView>
     </SafeAreaView>
   );
 };
 
-const getStyles = (theme: any) =>
+const getStyles = (theme: any, isPhone: boolean) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-
+    safeArea: { flex: 1, backgroundColor: theme.colors.background },
+    content: {
+      width: "100%",
+      alignSelf: "center",
+      paddingTop: 18,
+      paddingBottom: 36,
     },
-      safeArea: { flex: 1 },
+    header: { marginBottom: 16 },
     title: {
-      fontSize: 22,
-      fontWeight: "800",
-      color: theme.colors.primary,
-      textAlign: "center",
-      marginBottom: 14,
-    },
-      headerSubtitle: { color: "#fff", fontSize: 14, marginTop: 4, opacity: 0.85 },
-    dateButton: {
-      backgroundColor: theme.colors.card,
-      paddingVertical: 12,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      alignItems: "center",
-      marginBottom: 12,
-    },
-    dateText: {
       color: theme.colors.text,
-      fontSize: 16,
-    },
-    addButton: {
-      backgroundColor: theme.colors.primary,
-      paddingVertical: 14,
-      borderRadius: 10,
-      marginBottom: 18,
-    },
-    addButtonText: {
-      color: "#fff",
-      textAlign: "center",
-      fontWeight: "700",
+      fontSize: isPhone ? 28 : 34,
+      fontWeight: "800",
     },
     subtitle: {
       color: theme.colors.textMuted,
       fontSize: 15,
-      marginBottom: 6,
+      lineHeight: 21,
+      marginTop: 5,
     },
-    card: {
+    schedulerCard: {
       backgroundColor: theme.colors.card,
+      borderColor: theme.colors.border,
+      borderWidth: 1,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 18,
+      ...shadow(theme.colors.cardShadow),
+    },
+    cardLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      fontWeight: "800",
+      marginBottom: 8,
+    },
+    dateButton: {
+      minHeight: 50,
+      flexDirection: "row",
+      alignItems: "center",
       borderRadius: 12,
-      padding: 12,
-      marginBottom: 10,
       borderWidth: 1,
       borderColor: theme.colors.border,
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: 14,
+      gap: 10,
+      marginBottom: 12,
     },
-    cardTitle: { color: theme.colors.text, fontWeight: "700", fontSize: 15 },
-    cardBody: { color: theme.colors.textMuted, marginVertical: 4 },
-    cardDate: { color: theme.colors.textMuted, fontSize: 13 },
-        header: {
-      width: "100%",
-      height: 120,
-      borderBottomLeftRadius: 30,
-      borderBottomRightRadius: 30,
-      justifyContent: "flex-end",
+    dateText: { color: theme.colors.text, fontSize: 15, fontWeight: "700" },
+    addButton: {
+      minHeight: 48,
+      flexDirection: "row",
       alignItems: "center",
-      paddingBottom: 12,
-      marginBottom: 16,
-      shadowColor: "#000",
-      shadowOpacity: 0.2,
-      shadowRadius: 5,
-      elevation: 3,
-      position: "relative",
+      justifyContent: "center",
+      backgroundColor: theme.colors.primary,
+      borderRadius: 12,
+      gap: 8,
     },
-    backButton: {
-      position: "absolute",
-      top: 10,
-      left: 20,
-      backgroundColor: "rgba(255, 255, 255, 0.25)",
-      padding: 8,
-      borderRadius: 10,
-      shadowColor: "#ffffffff",
-      shadowOpacity: 0.3,
-      shadowRadius: 3,
-      elevation: 4,
-    },
-    headerTitle: {
-      color: "#fff",
+    addButtonText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+    sectionTitle: {
+      color: theme.colors.text,
+      fontSize: 18,
       fontWeight: "800",
-      fontSize: 20,
+      marginBottom: 10,
     },
+    reminderCard: {
+      flexDirection: "row",
+      gap: 12,
+      backgroundColor: theme.colors.card,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: 14,
+      marginBottom: 10,
+    },
+    reminderIcon: {
+      width: 38,
+      height: 38,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.background,
+    },
+    reminderTitle: { color: theme.colors.text, fontWeight: "800", fontSize: 15 },
+    reminderBody: { color: theme.colors.textMuted, marginTop: 3 },
+    reminderDate: { color: theme.colors.textMuted, fontSize: 12, marginTop: 5, fontWeight: "700" },
+    empty: {
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.card,
+      padding: 24,
+    },
+    emptyTitle: { color: theme.colors.text, fontWeight: "800", fontSize: 18 },
+    emptyText: { color: theme.colors.textMuted, marginTop: 4, textAlign: "center" },
   });

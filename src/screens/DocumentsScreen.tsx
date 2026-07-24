@@ -1,631 +1,214 @@
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
   ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
   ScrollView,
   StyleSheet,
-  Button,
-  Dimensions,
-  Platform,
-  Image,
-  Alert,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
-import { useDocuments } from "../hooks/useDocumentosHook";
-import { useTheme } from "../context/ThemeContext";
 import { WebView } from "react-native-webview";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { FadeSlideIn as Fade } from "../components/FadeSlideIn";
 import Feather from "@expo/vector-icons/Feather";
-import { HeaderMenu } from "../components/HeaderMenu";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
-import * as Sharing from "expo-sharing";
-import { apiPharma } from "../api/apiPharma";
 import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
+import { HeaderMenu } from "../components/HeaderMenu";
+import { FadeSlideIn as Fade } from "../components/FadeSlideIn";
 import { SuccessModal } from "../components/SuccessModal";
-
+import { apiPharma } from "../api/apiPharma";
+import { useTheme } from "../context/ThemeContext";
+import { useDocuments } from "../hooks/useDocumentosHook";
+import { isDemoToken } from "../data/localDb";
+import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
+import { tw } from "../themes/tailwindTokens";
 
 export const DocumentsScreen = () => {
   const { theme } = useTheme();
-  const {
-    ventas,
-    reportesIA,
-    otros,
-    loading,
-    error,
-    downloadAndOpenFile,
-    openedFile,
-    closeViewer,
-  } = useDocuments();
-
+  const { width } = useWindowDimensions();
+  const layout = getLayout(width);
+  const { ventas, reportesIA, otros, loading, error, downloadAndOpenFile, openedFile, closeViewer } =
+    useDocuments();
   const [selectedVenta, setSelectedVenta] = useState<any | null>(null);
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
-  const [showSucces, setShowSuccess] = useState(false);
-  const [successMessage, setSuccesMessage] = useState("");
-  const H = Dimensions.get("window").height;
-  const W = Dimensions.get("window").width;
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
-  // ✅ Descargar → compartir o abrir visor
-// ✅ Versión que convierte JSON a PDF cuando sea necesario
-// ✅ Versión que convierte JSON a PDF cuando sea necesario
-const handleDownload = async (id: string, filename: string) => {
-  try {
-    setDownloading(id);
-    const token = await AsyncStorage.getItem("token");
-    if (!token) throw new Error("Token no encontrado");
-
-    const url = `${apiPharma.defaults.baseURL}/api/documentos/descargar/${id}`;
-    const fileUri = FileSystem.cacheDirectory + filename;
-
-    console.log("📡 Descargando temporal:", url);
-
-    const res = await FileSystem.downloadAsync(url, fileUri, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    console.log("✅ Archivo descargado:", res.uri);
-
-    // Leer contenido descargado
-    const text = await FileSystem.readAsStringAsync(res.uri);
-    let isJson = false;
-
+  const handleDownload = async (id: string, filename: string) => {
     try {
-      JSON.parse(text);
-      isJson = true;
-    } catch {
-      isJson = false;
-    }
+      setDownloading(id);
+      const token = await AsyncStorage.getItem("token");
+      if (!token) throw new Error("Token no encontrado");
 
-    if (isJson) {
-      // 🧾 Generar ticket con mismo diseño que la visualización
-      const venta = JSON.parse(text);
-
-      const html = `
-        <html>
-          <head>
-            <meta charset="utf-8" />
-            <style>
-              @page { size: 80mm auto; margin: 8mm; }
-              body {
-                font-family: Arial, sans-serif;
-                font-size: 12px;
-                color: #222;
-                background: #f9f9fb;
-              }
-              .ticket {
-                border: 1px solid #ccc;
-                border-radius: 10px;
-                padding: 12px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-                background: #fff;
-              }
-              .header {
-                background: linear-gradient(135deg, #0096ff, #0078d7);
-                border-radius: 10px;
-                text-align: center;
-                padding: 8px 0;
-                color: #fff;
-              }
-              .subtitle {
-                font-size: 13px;
-                opacity: 0.9;
-              }
-              .divider {
-                border-top: 1px solid #ddd;
-                margin: 8px 0;
-              }
-              .info {
-                font-size: 12px;
-                margin-bottom: 6px;
-              }
-              .table {
-                width: 100%;
-                border-collapse: collapse;
-              }
-              th, td {
-                font-size: 11px;
-                padding: 4px 0;
-              }
-              th {
-                text-align: left;
-                border-bottom: 1px dashed #bbb;
-              }
-              td {
-                border-bottom: 1px dotted #eee;
-              }
-              .right {
-                text-align: right;
-              }
-              .total {
-                margin-top: 8px;
-                text-align: right;
-                font-weight: bold;
-                font-size: 13px;
-                color: #0078d7;
-              }
-              .footer {
-                text-align: center;
-                margin-top: 12px;
-                font-size: 11px;
-                color: #666;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="ticket">
-              <div class="header">
-                <h2 style="margin:0;">PharmaControl</h2>
-                <div class="subtitle">Control inteligente para tu farmacia</div>
-              </div>
-
-              <div class="info">
-                <b>Folio:</b> ${venta._id ?? "N/A"}<br/>
-                <b>Fecha:</b> ${new Date(venta.fecha).toLocaleString()}<br/>
-                <b>Vendedor:</b> ${venta.usuario?.nombre ?? "Desconocido"}
-              </div>
-
-              <div class="divider"></div>
-
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Medicamento</th>
-                    <th class="right">Cant.</th>
-                    <th class="right">P/U</th>
-                    <th class="right">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${(venta.detalles || [])
-                    .map(
-                      (d: any) => `
-                      <tr>
-                        <td>${d.medicamento?.nombre ?? ""}</td>
-                        <td class="right">${d.cantidad}</td>
-                        <td class="right">$${Number(d.precioUnitario || 0).toFixed(2)}</td>
-                        <td class="right">$${Number(d.total).toFixed(2)}</td>
-                      </tr>`
-                    )
-                    .join("")}
-                </tbody>
-              </table>
-
-              <div class="divider"></div>
-
-              <div class="total">TOTAL: $${Number(venta.total || 0).toFixed(2)}</div>
-
-              <div class="footer">
-                ¡Gracias por su compra!<br/>
-                “Control inteligente para tu farmacia”
-              </div>
-            </div>
-          </body>
-        </html>
-      `;
-
-      const pdf = await Print.printToFileAsync({ html });
-      console.log("✅ PDF generado:", pdf.uri);
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(pdf.uri, {
-          mimeType: "application/pdf",
-          dialogTitle: `Ticket de venta`,
-        });
-      } else {
-        setCurrentFile(pdf.uri);
+      if (isDemoToken(token)) {
+        setSuccessMessage(`El archivo ${filename} esta disponible como dato demo.`);
+        setShowSuccess(true);
+        return;
       }
 
-      // ✅ Modal de confirmación (PDF generado desde JSON)
-      setSuccesMessage("El ticket se ha convertido correctamente en PDF y está listo para compartir.");
-      setShowSuccess(true);
-    } else {
-      // 📄 Si ya es PDF
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(res.uri, {
-          mimeType: "application/pdf",
-          dialogTitle: `Archivo: ${filename}`,
-        });
-      } else {
-        setCurrentFile(res.uri);
+      const url = `${apiPharma.defaults.baseURL}/api/documentos/descargar/${id}`;
+      const fileUri = FileSystem.cacheDirectory + filename;
+      const res = await FileSystem.downloadAsync(url, fileUri, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const text = await FileSystem.readAsStringAsync(res.uri);
+
+      try {
+        const venta = JSON.parse(text);
+        const pdf = await Print.printToFileAsync({ html: buildTicketHtml(venta) });
+        if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(pdf.uri, { mimeType: "application/pdf" });
+        else setCurrentFile(pdf.uri);
+        setSuccessMessage("Ticket convertido correctamente a PDF.");
+      } catch {
+        if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(res.uri, { mimeType: "application/pdf" });
+        else setCurrentFile(res.uri);
+        setSuccessMessage(`Archivo ${filename} descargado correctamente.`);
       }
 
-      // ✅ Modal de confirmación (PDF existente)
-      setSuccesMessage(`El archivo ${filename} se ha descargado correctamente.`);
       setShowSuccess(true);
+    } catch (downloadError) {
+      console.error("Error al generar PDF:", downloadError);
+      Alert.alert("Error", "No se pudo generar el PDF");
+    } finally {
+      setDownloading(null);
     }
-  } catch (error) {
-    console.error("❌ Error al generar PDF:", error);
-    Alert.alert("Error", "No se pudo generar el PDF");
-  } finally {
-    setDownloading(null);
+  };
+
+  if (selectedVenta) {
+    return <TicketView venta={selectedVenta} onBack={() => setSelectedVenta(null)} />;
   }
-};
 
-
-  // 🧾 Renderizar ticket visual
-  const renderTicket = (venta: any) => (
-    <SafeAreaView
-      style={[styles.ticketSafeArea, { backgroundColor: theme.colors.background }]}
-    >
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
-        showsVerticalScrollIndicator={false}
-      >
-        <Fade delay={100}>
-          <View
-            style={[
-              styles.ticketWrapper,
-              {
-                backgroundColor: theme.colors.card,
-                borderColor: theme.colors.border || "#ccc",
-              },
-            ]}
-          >
-            <LinearGradient
-              colors={[theme.colors.primary, theme.colors.primary + "CC"]}
-              style={styles.ticketHeader}
-            >
-              <View style={styles.ticketLogo}>
-                <Image
-                  source={require("../../assets/logo1.png")}
-                  style={{ width: 80, height: 80, resizeMode: "contain" }}
-                />
-              </View>
-              <Text style={[styles.ticketSubtitle, { color: "#f9f9f9" }]}>
-                Comprobante de Venta
-              </Text>
-            </LinearGradient>
-
-            <View
-              style={[
-                styles.ticketDivider,
-                { borderBottomColor: theme.colors.border || "#ccc" },
-              ]}
-            />
-
-            {/* Info general */}
-            <View style={styles.ticketInfo}>
-              <Text style={[styles.ticketLine, { color: theme.colors.text }]}>
-                ID Venta: {venta._id}
-              </Text>
-              <Text style={[styles.ticketLine, { color: theme.colors.text }]}>
-                Cliente: {venta.usuario?.nombre || "Cliente"}{" "}
-                {venta.usuario?.apellido || ""}
-              </Text>
-              <Text style={[styles.ticketLine, { color: theme.colors.text }]}>
-                Fecha: {new Date(venta.fecha).toLocaleString()}
-              </Text>
-            </View>
-
-            <View
-              style={[
-                styles.ticketDivider,
-                { borderBottomColor: theme.colors.border || "#ccc" },
-              ]}
-            />
-
-            {/* Tabla encabezado */}
-            <View style={styles.ticketHeaderRow}>
-              <Text
-                style={[
-                  styles.ticketHeaderText,
-                  { color: theme.colors.textMuted },
-                ]}
-              >
-                Medicamento
-              </Text>
-              <Text
-                style={[
-                  styles.ticketHeaderText,
-                  { color: theme.colors.textMuted },
-                ]}
-              >
-                Cant.
-              </Text>
-              <Text
-                style={[
-                  styles.ticketHeaderText,
-                  { color: theme.colors.textMuted },
-                ]}
-              >
-                Precio
-              </Text>
-            </View>
-
-            {(venta.detalles || []).map((item: any, index: number) => (
-              <View key={index} style={styles.ticketRow}>
-                <Text style={[styles.ticketItemName, { color: theme.colors.text }]}>
-                  {item.medicamento?.nombre || "Producto"}
-                </Text>
-                <Text style={[styles.ticketItemQty, { color: theme.colors.text }]}>
-                  {item.cantidad}
-                </Text>
-                <Text style={[styles.ticketItemPrice, { color: theme.colors.text }]}>
-                  ${Number(item.precioUnitario || 0).toFixed(2)}
-                </Text>
-              </View>
-            ))}
-
-            <View
-              style={[
-                styles.ticketDividerDashed,
-                { borderBottomColor: theme.colors.border || "#bbb" },
-              ]}
-            />
-
-            {/* Total */}
-            <View style={styles.ticketTotalRow}>
-              <Text style={[styles.ticketTotalLabel, { color: theme.colors.text }]}>
-                TOTAL
-              </Text>
-              <Text
-                style={[
-                  styles.ticketTotalAmount,
-                  { color: theme.colors.primary },
-                ]}
-              >
-                ${Number(venta.total || 0).toFixed(2)}
-              </Text>
-            </View>
-
-            <View
-              style={[
-                styles.ticketDivider,
-                { borderBottomColor: theme.colors.border || "#ccc" },
-              ]}
-            />
-
-            <Text style={[styles.ticketThanks, { color: theme.colors.primary }]}>
-              ¡Gracias por su compra!
-            </Text>
-            <Text style={[styles.ticketFooter, { color: theme.colors.textMuted }]}>
-              “Control inteligente para tu farmacia”
-            </Text>
-
-            <TouchableOpacity
-              style={[styles.ticketCloseBtn, { backgroundColor: theme.colors.primary }]}
-              onPress={() => setSelectedVenta(null)}
-            >
-              <Feather name="arrow-left" size={18} color="#fff" />
-              <Text style={styles.ticketCloseText}>Volver</Text>
-            </TouchableOpacity>
-          </View>
-        </Fade>
-      </ScrollView>
-
-    </SafeAreaView>
-  );
-
-  // 📄 Renderizadores de visor PDF
-  if (selectedVenta) return renderTicket(selectedVenta);
-
-  if (currentFile) {
+  if (currentFile || openedFile) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#000" }}>
-        <Button title="Cerrar visor" onPress={() => setCurrentFile(null)} />
-        <WebView source={{ uri: currentFile }} style={{ flex: 1 }} startInLoadingState />
-      </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
+        <TouchableOpacity style={styles.viewerClose} onPress={currentFile ? () => setCurrentFile(null) : closeViewer}>
+          <Feather name="x" size={18} color="#fff" />
+          <Text style={styles.viewerCloseText}>Cerrar visor</Text>
+        </TouchableOpacity>
+        <WebView source={{ uri: currentFile || openedFile || "" }} style={{ flex: 1 }} startInLoadingState />
+      </SafeAreaView>
     );
   }
 
-  if (openedFile) {
-    return (
-      <View style={{ flex: 1, backgroundColor: "#000" }}>
-        <Button title="Cerrar visor" onPress={closeViewer} />
-        <WebView source={{ uri: openedFile }} style={{ flex: 1 }} startInLoadingState />
-      </View>
-    );
-  }
-
-  // ⏳ Loading o error
-  if (loading)
+  if (loading || error) {
     return (
       <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={{ color: theme.colors.text, marginTop: 10 }}>
-          Cargando documentos...
-        </Text>
+        {loading ? (
+          <>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text style={{ color: theme.colors.text, marginTop: 10 }}>Cargando documentos...</Text>
+          </>
+        ) : (
+          <Text style={{ color: theme.colors.danger }}>Error: {error}</Text>
+        )}
       </View>
     );
+  }
 
-  if (error)
-    return (
-      <View style={[styles.center, { backgroundColor: theme.colors.background }]}>
-        <Text style={{ color: theme.colors.danger }}>Error: {error}</Text>
-      </View>
-    );
+  const totalDocs = ventas.length + reportesIA.length + otros.length;
 
-  // 📚 Vista principal
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <HeaderMenu />
       <ScrollView
         showsVerticalScrollIndicator={false}
-        style={{ height: H, width: W }}
-        contentContainerStyle={{ paddingBottom: 40, paddingHorizontal: 16 }}
+        contentContainerStyle={[
+          styles.mainContent,
+          webMaxWidthStyle(width),
+          { paddingHorizontal: layout.pagePadding },
+        ]}
       >
-        <Fade delay={50}>
-          <LinearGradient colors={[theme.colors.primary, "#5AB4F8"]} style={styles.header}>
-            <Text style={styles.headerTitle}>Documentos</Text>
-            <Text style={styles.headerSubtitle}>
-              Consulta, descarga y visualiza tus reportes
-            </Text>
+        <Fade delay={40}>
+          <LinearGradient colors={[theme.colors.primary, theme.colors.secondary]} style={styles.hero}>
+            <View>
+              <Text style={styles.heroEyebrow}>Centro documental</Text>
+              <Text style={styles.heroTitle}>Documentos</Text>
+              <Text style={styles.heroSubtitle}>Tickets, reportes inteligentes y archivos de operacion.</Text>
+            </View>
+            <View style={styles.heroMetric}>
+              <Text style={styles.heroMetricValue}>{totalDocs}</Text>
+              <Text style={styles.heroMetricLabel}>archivos</Text>
+            </View>
           </LinearGradient>
         </Fade>
 
-        {/* 🧾 Ventas */}
-        <Fade delay={150}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            Ventas Registradas
-          </Text>
-          {ventas.length > 0 ? (
-            ventas.map((v) => (
-              <View
-                key={v._id}
-                style={[styles.card, { backgroundColor: theme.colors.card }]}
-              >
-                <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
-                  Venta #{v._id} — {v.usuario?.nombre || "Cliente"}
-                </Text>
-                <Text
-                  style={[styles.cardText, { color: theme.colors.textMuted }]}
-                >
-                  Fecha: {new Date(v.fecha).toLocaleDateString()} | Total: $
-                  {Number(v.total || 0).toFixed(2)}
-                </Text>
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      { backgroundColor: theme.colors.primary },
-                    ]}
-                    onPress={() => setSelectedVenta(v)}
-                  >
-                    <Text style={styles.buttonText}>Ver ticket</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      { backgroundColor: theme.colors.success },
-                    ]}
-                    onPress={() =>
-                      handleDownload(v._id, `venta_${v._id}.pdf`)
-                    }
-                    disabled={downloading === v._id}
-                  >
-                    {downloading === v._id ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <Text style={styles.buttonText}>Guardar</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          ) : (
-            <Text
-              style={[styles.empty, { color: theme.colors.textMuted }]}
-            >
-              No hay ventas registradas.
-            </Text>
-          )}
-        </Fade>
+        <View style={[styles.summaryGrid, { gap: layout.gap }]}>
+          <SummaryCard label="Ventas" value={ventas.length} icon="shopping-bag" color={theme.colors.primary} />
+          <SummaryCard label="Reportes IA" value={reportesIA.length} icon="cpu" color={tw.colors.violet600} />
+          <SummaryCard label="Otros" value={otros.length} icon="folder" color={theme.colors.success} />
+        </View>
 
-        {/* 🤖 Reportes de IA */}
-        <Fade delay={250}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            Reportes de IA
-          </Text>
-          {reportesIA.length > 0 ? (
-            reportesIA.map((r) => (
-              <View
-                key={r._id}
-                style={[styles.card, { backgroundColor: theme.colors.card }]}
-              >
-                <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
-                  {r.filename}
-                </Text>
-                <Text
-                  style={[styles.cardText, { color: theme.colors.textMuted }]}
-                >
-                  Generado por: {r.generadoPor || "IA"}
-                </Text>
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      { backgroundColor: theme.colors.primary },
-                    ]}
-                    onPress={() => downloadAndOpenFile(r._id, r.filename)}
-                  >
-                    <Text style={styles.buttonText}>👁️ Ver</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      { backgroundColor: theme.colors.success },
-                    ]}
-                    onPress={() => handleDownload(r._id, r.filename)}
-                    disabled={downloading === r._id}
-                  >
-                    {downloading === r._id ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <Text style={styles.buttonText}>💾 Guardar</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
+        <DocumentSection title="Ventas registradas">
+          {ventas.length ? (
+            ventas.map((venta) => (
+              <DocumentCard
+                key={venta._id}
+                title={`Venta #${venta._id}`}
+                subtitle={`${new Date(venta.fecha).toLocaleDateString()} - Total $${Number(venta.total || 0).toFixed(2)}`}
+                icon="receipt"
+                primaryLabel="Ver ticket"
+                onPrimary={() => setSelectedVenta(venta)}
+                secondaryLabel="Exportar"
+                onSecondary={() => handleDownload(venta._id, `venta_${venta._id}.pdf`)}
+                loading={downloading === venta._id}
+              />
             ))
           ) : (
-            <Text
-              style={[styles.empty, { color: theme.colors.textMuted }]}
-            >
-              No hay reportes generados aún.
-            </Text>
+            <EmptyText text="No hay ventas registradas." />
           )}
-        </Fade>
+        </DocumentSection>
 
-        {/* 📄 Otros Documentos */}
-        <Fade delay={350}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            Otros Documentos
-          </Text>
-          {otros.length > 0 ? (
-            otros.map((r) => (
-              <View
-                key={r._id}
-                style={[styles.card, { backgroundColor: theme.colors.card }]}
-              >
-                <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
-                  {r.filename}
-                </Text>
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      { backgroundColor: theme.colors.primary },
-                    ]}
-                    onPress={() =>
-                      downloadAndOpenFile(r._id, r.filename)
-                    }
-                  >
-                    <Text style={styles.buttonText}>👁️ Ver</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      { backgroundColor: theme.colors.success },
-                    ]}
-                    onPress={() => handleDownload(r._id, r.filename)}
-                    disabled={downloading === r._id}
-                  >
-                    {downloading === r._id ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <Text style={styles.buttonText}>💾 Guardar</Text>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
+        <DocumentSection title="Reportes de IA">
+          {reportesIA.length ? (
+            reportesIA.map((doc) => (
+              <DocumentCard
+                key={doc._id}
+                title={doc.filename}
+                subtitle={`Generado por ${doc.generadoPor || "IA"}`}
+                icon="bar-chart-2"
+                primaryLabel="Ver"
+                onPrimary={() => downloadAndOpenFile(doc._id, doc.filename)}
+                secondaryLabel="Guardar"
+                onSecondary={() => handleDownload(doc._id, doc.filename)}
+                loading={downloading === doc._id}
+              />
             ))
           ) : (
-            <Text
-              style={[styles.empty, { color: theme.colors.textMuted }]}
-            >
-              No hay otros documentos disponibles.
-            </Text>
+            <EmptyText text="No hay reportes generados aun." />
           )}
-        </Fade>
+        </DocumentSection>
+
+        <DocumentSection title="Otros documentos">
+          {otros.length ? (
+            otros.map((doc) => (
+              <DocumentCard
+                key={doc._id}
+                title={doc.filename}
+                subtitle={doc.descripcion || "Archivo disponible"}
+                icon="file-text"
+                primaryLabel="Ver"
+                onPrimary={() => downloadAndOpenFile(doc._id, doc.filename)}
+                secondaryLabel="Guardar"
+                onSecondary={() => handleDownload(doc._id, doc.filename)}
+                loading={downloading === doc._id}
+              />
+            ))
+          ) : (
+            <EmptyText text="No hay otros documentos disponibles." />
+          )}
+        </DocumentSection>
       </ScrollView>
-             {/* ✅ Modal de confirmación */}
+
       <SuccessModal
-        visible={showSucces}
-        title="✅ Exportación completada"
+        visible={showSuccess}
+        title="Exportacion completada"
         message={successMessage}
         onRequestClose={() => setShowSuccess(false)}
       />
@@ -633,131 +216,271 @@ const handleDownload = async (id: string, filename: string) => {
   );
 };
 
-// 🎨 Estilos completos
+const TicketView = ({ venta, onBack }: { venta: any; onBack: () => void }) => {
+  const { theme } = useTheme();
+  const total = Number(venta.total || 0);
+
+  return (
+    <SafeAreaView style={[styles.ticketSafeArea, { backgroundColor: theme.colors.background }]}>
+      <ScrollView contentContainerStyle={styles.ticketContent} showsVerticalScrollIndicator={false}>
+        <Fade delay={50}>
+          <View style={[styles.ticketWrapper, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+            <View style={styles.ticketTopBar}>
+              <TouchableOpacity style={[styles.ticketIconButton, { backgroundColor: theme.colors.background }]} onPress={onBack}>
+                <Feather name="arrow-left" size={18} color={theme.colors.text} />
+              </TouchableOpacity>
+              <Text style={[styles.ticketScreenTitle, { color: theme.colors.text }]}>Vista de ticket</Text>
+              <View style={styles.ticketIconButtonPlaceholder} />
+            </View>
+
+            <LinearGradient colors={[theme.colors.primary, theme.colors.secondary]} style={styles.ticketHeader}>
+              <View style={styles.ticketLogo}>
+                <Image source={require("../../assets/logo1.png")} style={{ width: 56, height: 56, resizeMode: "contain" }} />
+              </View>
+              <Text style={styles.ticketBrand}>PharmaControl</Text>
+              <Text style={styles.ticketSubtitle}>Comprobante de venta</Text>
+            </LinearGradient>
+
+            <View style={styles.ticketMetaGrid}>
+              <TicketMeta label="Folio" value={String(venta._id ?? "N/A")} />
+              <TicketMeta label="Cliente" value={`${venta.usuario?.nombre || "Cliente"} ${venta.usuario?.apellido || ""}`.trim()} />
+              <TicketMeta label="Fecha" value={new Date(venta.fecha).toLocaleString()} />
+            </View>
+
+            <View style={styles.ticketTableHead}>
+              <Text style={[styles.ticketHeadText, styles.ticketProductCol]}>Producto</Text>
+              <Text style={styles.ticketHeadText}>Cant.</Text>
+              <Text style={[styles.ticketHeadText, { textAlign: "right" }]}>Importe</Text>
+            </View>
+
+            {(venta.detalles || []).map((item: any, index: number) => (
+              <View key={index} style={styles.ticketRow}>
+                <View style={styles.ticketProductCol}>
+                  <Text style={[styles.ticketItemName, { color: theme.colors.text }]}>{item.medicamento?.nombre || "Producto"}</Text>
+                  <Text style={styles.ticketItemMeta}>${Number(item.precioUnitario || 0).toFixed(2)} c/u</Text>
+                </View>
+                <Text style={[styles.ticketItemQty, { color: theme.colors.text }]}>{item.cantidad}</Text>
+                <Text style={[styles.ticketItemPrice, { color: theme.colors.text }]}>
+                  ${Number(item.total ?? (item.cantidad || 0) * (item.precioUnitario || 0)).toFixed(2)}
+                </Text>
+              </View>
+            ))}
+
+            <View style={styles.ticketTotalRow}>
+              <View>
+                <Text style={styles.ticketTotalLabel}>Total</Text>
+                <Text style={styles.ticketTotalHint}>IVA incluido cuando aplique</Text>
+              </View>
+              <Text style={[styles.ticketTotalAmount, { color: theme.colors.primary }]}>${total.toFixed(2)}</Text>
+            </View>
+
+            <View style={styles.ticketFooterBox}>
+              <Feather name="check-circle" size={20} color={theme.colors.success} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.ticketThanks, { color: theme.colors.text }]}>Gracias por su compra</Text>
+                <Text style={styles.ticketFooter}>Control inteligente para tu farmacia</Text>
+              </View>
+            </View>
+          </View>
+        </Fade>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const TicketMeta = ({ label, value }: { label: string; value: string }) => {
+  const { theme } = useTheme();
+  return (
+    <View style={styles.ticketMetaItem}>
+      <Text style={styles.ticketMetaLabel}>{label}</Text>
+      <Text style={[styles.ticketMetaValue, { color: theme.colors.text }]} numberOfLines={2}>
+        {value}
+      </Text>
+    </View>
+  );
+};
+
+const SummaryCard = ({ label, value, icon, color }: any) => {
+  const { theme } = useTheme();
+  return (
+    <View style={[styles.summaryCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+      <View style={[styles.summaryIcon, { backgroundColor: `${color}18` }]}>
+        <Feather name={icon} size={18} color={color} />
+      </View>
+      <Text style={[styles.summaryValue, { color: theme.colors.text }]}>{value}</Text>
+      <Text style={styles.summaryLabel}>{label}</Text>
+    </View>
+  );
+};
+
+const DocumentSection = ({ title, children }: { title: string; children: React.ReactNode }) => {
+  const { theme } = useTheme();
+  return (
+    <View style={styles.section}>
+      <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{title}</Text>
+      {children}
+    </View>
+  );
+};
+
+const DocumentCard = ({ title, subtitle, icon, primaryLabel, secondaryLabel, onPrimary, onSecondary, loading }: any) => {
+  const { theme } = useTheme();
+  return (
+    <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+      <View style={styles.cardMain}>
+        <View style={[styles.docIcon, { backgroundColor: theme.colors.background }]}>
+          <Feather name={icon} size={20} color={theme.colors.primary} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text numberOfLines={1} style={[styles.cardTitle, { color: theme.colors.text }]}>{title}</Text>
+          <Text numberOfLines={2} style={[styles.cardText, { color: theme.colors.textMuted }]}>{subtitle}</Text>
+        </View>
+      </View>
+      <View style={styles.buttonRow}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.primary }]} onPress={onPrimary}>
+          <Text style={styles.buttonText}>{primaryLabel}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.success }]} onPress={onSecondary} disabled={loading}>
+          {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.buttonText}>{secondaryLabel}</Text>}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const EmptyText = ({ text }: { text: string }) => {
+  const { theme } = useTheme();
+  return <Text style={[styles.empty, { color: theme.colors.textMuted }]}>{text}</Text>;
+};
+
+const buildTicketHtml = (venta: any) => `
+  <html>
+    <head>
+      <meta charset="utf-8" />
+      <style>
+        @page { size: 80mm auto; margin: 8mm; }
+        body { font-family: Arial, sans-serif; color: #0f172a; background: #f8fafc; }
+        .ticket { border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px; background: #fff; }
+        .header { background: linear-gradient(135deg, #2563eb, #0ea5e9); color: #fff; border-radius: 14px; padding: 14px; text-align: center; }
+        .brand { font-size: 20px; font-weight: 800; }
+        .meta { margin: 12px 0; font-size: 12px; color: #334155; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th { color: #64748b; text-align: left; border-bottom: 1px solid #e2e8f0; padding: 6px 0; }
+        td { border-bottom: 1px solid #f1f5f9; padding: 6px 0; }
+        .right { text-align: right; }
+        .total { margin-top: 12px; background: #f0f9ff; border-radius: 12px; padding: 10px; text-align: right; font-size: 18px; font-weight: 800; color: #2563eb; }
+        .footer { margin-top: 12px; text-align: center; color: #64748b; font-size: 11px; }
+      </style>
+    </head>
+    <body>
+      <div class="ticket">
+        <div class="header"><div class="brand">PharmaControl</div><div>Comprobante de venta</div></div>
+        <div class="meta">
+          <b>Folio:</b> ${venta._id ?? "N/A"}<br/>
+          <b>Fecha:</b> ${new Date(venta.fecha).toLocaleString()}<br/>
+          <b>Cliente:</b> ${venta.usuario?.nombre ?? "Cliente"} ${venta.usuario?.apellido ?? ""}
+        </div>
+        <table>
+          <thead><tr><th>Producto</th><th class="right">Cant.</th><th class="right">Importe</th></tr></thead>
+          <tbody>
+            ${(venta.detalles || [])
+              .map(
+                (d: any) =>
+                  `<tr><td>${d.medicamento?.nombre ?? ""}</td><td class="right">${d.cantidad}</td><td class="right">$${Number(
+                    d.total ?? (d.cantidad || 0) * (d.precioUnitario || 0)
+                  ).toFixed(2)}</td></tr>`
+              )
+              .join("")}
+          </tbody>
+        </table>
+        <div class="total">$${Number(venta.total || 0).toFixed(2)}</div>
+        <div class="footer">Gracias por su compra<br/>Control inteligente para tu farmacia</div>
+      </div>
+    </body>
+  </html>
+`;
+
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: {
-    width: "100%",
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    paddingVertical: 40,
-    alignItems: "center",
+  mainContent: { width: "100%", alignSelf: "center", paddingTop: 18, paddingBottom: 40 },
+  hero: {
+    borderRadius: tw.radius.xl,
+    padding: tw.spacing[5],
     marginBottom: 16,
-    elevation: 4,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 16,
+    ...shadow("#000"),
   },
-  headerTitle: { color: "#fff", fontSize: 22, fontWeight: "800" },
-  headerSubtitle: { color: "#fff", fontSize: 14, marginTop: 4, opacity: 0.85 },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginTop: 10,
-    marginBottom: 6,
+  heroEyebrow: { color: "#EAF6FF", fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
+  heroTitle: { color: "#fff", fontSize: 32, fontWeight: "800", marginTop: 4 },
+  heroSubtitle: { color: "#EAF6FF", fontSize: 14, lineHeight: 20, marginTop: 4, maxWidth: 460 },
+  heroMetric: {
+    minWidth: 96,
+    borderRadius: 16,
+    padding: 12,
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.18)",
   },
-  card: {
-    borderRadius: 14,
-    padding: 14,
-    marginVertical: 6,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-  },
-  cardTitle: { fontSize: 16, fontWeight: "700" },
-  cardText: { fontSize: 14, marginTop: 4 },
+  heroMetricValue: { color: "#fff", fontSize: 28, fontWeight: "800" },
+  heroMetricLabel: { color: "#EAF6FF", fontSize: 12, fontWeight: "700" },
+  summaryGrid: { flexDirection: "row", flexWrap: "wrap", marginBottom: 14 },
+  summaryCard: { flex: 1, minWidth: 150, borderWidth: 1, borderRadius: 16, padding: 14, ...shadow("#000") },
+  summaryIcon: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  summaryValue: { fontSize: 26, fontWeight: "800", marginTop: 10 },
+  summaryLabel: { color: tw.colors.slate500, fontSize: 12, fontWeight: "800", textTransform: "uppercase" },
+  section: { marginTop: 10 },
+  sectionTitle: { fontSize: 19, fontWeight: "800", marginBottom: 8 },
+  card: { borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1, ...shadow("#000") },
+  cardMain: { flexDirection: "row", alignItems: "center", gap: 12 },
+  docIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  cardTitle: { fontSize: 16, fontWeight: "800" },
+  cardText: { fontSize: 14, marginTop: 4, lineHeight: 19 },
   empty: { fontSize: 14, fontStyle: "italic", marginVertical: 10 },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
-  button: {
-    flex: 1,
-    padding: 10,
-    marginHorizontal: 5,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  buttonText: { color: "#fff", fontWeight: "600" },
-  ticketSafeArea: { flex: 1, paddingTop: Platform.OS === "android" ? 40 : 20 },
-  ticketWrapper: {
-    width: "88%",
-    alignSelf: "center",
-    padding: 18,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1,
-  },
-  ticketHeader: { borderRadius: 10, paddingVertical: 12, marginBottom: 8 },
-  ticketLogo: { alignSelf: "center" },
-  ticketSubtitle: { textAlign: "center", fontSize: 14, marginTop: 2 },
-  ticketDivider: { borderBottomWidth: 1, marginVertical: 10 },
-  ticketDividerDashed: {
-    borderBottomWidth: 1,
-    borderStyle: "dashed",
-    marginVertical: 10,
-  },
-  ticketLine: {
-    fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
-    fontSize: 13,
-  },
-  ticketHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    paddingBottom: 4,
-    marginBottom: 4,
-  },
-  ticketHeaderText: {
-    fontWeight: "700",
-    fontSize: 13,
-    flex: 1,
-    textAlign: "center",
-  },
-  ticketRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginVertical: 2,
-  },
-  ticketItemName: {
-    flex: 2,
-    fontSize: 13,
-    fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
-  },
-  ticketItemQty: { flex: 0.5, textAlign: "center", fontSize: 13 },
-  ticketItemPrice: { flex: 1, textAlign: "right", fontSize: 13 },
-  ticketTotalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 6,
-    alignItems: "center",
-  },
-  ticketTotalLabel: { fontWeight: "800", fontSize: 15 },
-  ticketTotalAmount: { fontWeight: "800", fontSize: 16 },
-  ticketThanks: { textAlign: "center", marginTop: 10, fontSize: 14, fontWeight: "600" },
-  ticketFooter: {
-    textAlign: "center",
-    fontSize: 12,
-    marginTop: 4,
-    fontStyle: "italic",
-  },
-  ticketCloseBtn: {
+  buttonRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 12 },
+  button: { flex: 1, minWidth: 120, minHeight: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  buttonText: { color: "#fff", fontWeight: "800" },
+  viewerClose: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 18,
-    borderRadius: 10,
-    paddingVertical: 10,
+    gap: 8,
+    padding: 12,
+    backgroundColor: "#111827",
   },
-  ticketCloseText: {
-    color: "#fff",
-    fontWeight: "700",
-    marginLeft: 6,
-    fontSize: 14,
-  },
-  ticketInfo: { marginBottom: 6 },
+  viewerCloseText: { color: "#fff", fontWeight: "800" },
+  ticketSafeArea: { flex: 1, paddingTop: Platform.OS === "android" ? 24 : 0 },
+  ticketContent: { flexGrow: 1, justifyContent: "center", paddingVertical: 24 },
+  ticketWrapper: { width: "92%", maxWidth: 560, alignSelf: "center", padding: 16, borderRadius: 20, borderWidth: 1, ...shadow("#000") },
+  ticketTopBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  ticketIconButton: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  ticketIconButtonPlaceholder: { width: 40, height: 40 },
+  ticketScreenTitle: { fontSize: 15, fontWeight: "800" },
+  ticketHeader: { borderRadius: 18, padding: 18, alignItems: "center", marginBottom: 14 },
+  ticketLogo: { width: 68, height: 68, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
+  ticketBrand: { color: "#fff", fontSize: 26, fontWeight: "800", marginTop: 10 },
+  ticketSubtitle: { color: "#EAF6FF", fontWeight: "700", marginTop: 2 },
+  ticketMetaGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, backgroundColor: tw.colors.slate50, borderRadius: 14, padding: 12 },
+  ticketMetaItem: { flex: 1, minWidth: 130 },
+  ticketMetaLabel: { color: tw.colors.slate500, fontSize: 11, fontWeight: "800", textTransform: "uppercase" },
+  ticketMetaValue: { fontSize: 13, fontWeight: "700", marginTop: 3 },
+  ticketTableHead: { flexDirection: "row", alignItems: "center", backgroundColor: tw.colors.slate100, borderRadius: 12, padding: 10, marginTop: 12 },
+  ticketHeadText: { flex: 1, color: tw.colors.slate500, fontSize: 11, fontWeight: "800", textAlign: "center", textTransform: "uppercase" },
+  ticketProductCol: { flex: 2, textAlign: "left" },
+  ticketRow: { flexDirection: "row", alignItems: "center", gap: 10, borderBottomWidth: 1, borderBottomColor: tw.colors.slate100, paddingVertical: 12 },
+  ticketItemName: { fontSize: 14, fontWeight: "800" },
+  ticketItemMeta: { color: tw.colors.slate500, fontSize: 12, marginTop: 2 },
+  ticketItemQty: { flex: 1, textAlign: "center", fontSize: 14, fontWeight: "700" },
+  ticketItemPrice: { flex: 1, textAlign: "right", fontSize: 14, fontWeight: "800" },
+  ticketTotalRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: tw.colors.sky50, borderRadius: 16, padding: 14, marginTop: 14 },
+  ticketTotalLabel: { color: tw.colors.slate900, fontSize: 15, fontWeight: "800" },
+  ticketTotalHint: { color: tw.colors.slate500, fontSize: 11, marginTop: 2 },
+  ticketTotalAmount: { fontSize: 24, fontWeight: "800" },
+  ticketFooterBox: { flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: tw.colors.slate200, borderRadius: 14, padding: 12, marginTop: 14 },
+  ticketThanks: { fontSize: 14, fontWeight: "800" },
+  ticketFooter: { color: tw.colors.slate500, fontSize: 12, marginTop: 2 },
 });
+
+export default DocumentsScreen;

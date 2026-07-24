@@ -13,6 +13,7 @@ import { useStats } from "../hooks/useStats";
 import { useTheme } from "../context/ThemeContext";
 import { HeaderMenu } from "../components/HeaderMenu";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
+import { tw } from "../themes/tailwindTokens";
 
 function hexToRgba(hex: string, opacity = 1) {
   const normalized = hex.replace("#", "");
@@ -62,6 +63,9 @@ export const DashboardScreen = () => {
     labelColor: () => theme.colors.text,
     propsForLabels: { fontSize: 12 },
   };
+  const healthy = Math.max(0, stats.total - stats.porCaducar - stats.caducados);
+  const healthyPercent = stats.total > 0 ? Math.round((healthy / stats.total) * 100) : 0;
+  const riskPercent = stats.total > 0 ? Math.round(((stats.porCaducar + stats.caducados) / stats.total) * 100) : 0;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -75,14 +79,36 @@ export const DashboardScreen = () => {
         ]}
       >
         <View style={styles.hero}>
-          <Text style={styles.title}>Panel de control</Text>
-          <Text style={styles.subtitle}>Inventario, alertas y distribucion de medicamentos.</Text>
+          <View>
+            <Text style={styles.eyebrow}>Resumen operativo</Text>
+            <Text style={styles.title}>Panel de control</Text>
+            <Text style={styles.subtitle}>Inventario, alertas y distribucion de medicamentos.</Text>
+          </View>
+          <View style={styles.healthPill}>
+            <Text style={styles.healthValue}>{healthyPercent}%</Text>
+            <Text style={styles.healthLabel}>inventario sano</Text>
+          </View>
         </View>
 
         <View style={[styles.cardsGrid, { gap: layout.gap }]}>
           <StatCard title="Medicamentos" value={stats.total} color={theme.colors.primary} />
           <StatCard title="Por caducar" value={stats.porCaducar} color={theme.colors.warning} />
           <StatCard title="Caducados" value={stats.caducados} color={theme.colors.danger} />
+        </View>
+
+        <View style={[styles.insightsGrid, { gap: layout.gap }]}>
+          <InsightCard
+            label="Inventario sano"
+            value={`${healthy} unidades`}
+            tone="success"
+            percent={healthyPercent}
+          />
+          <InsightCard
+            label="Riesgo operativo"
+            value={`${riskPercent}% requiere atencion`}
+            tone={riskPercent > 30 ? "danger" : "warning"}
+            percent={riskPercent}
+          />
         </View>
 
         <View style={[styles.chartsGrid, { gap: layout.gap }]}>
@@ -145,6 +171,36 @@ const StatCard = ({ title, value, color }: { title: string; value: number; color
   );
 };
 
+const InsightCard = ({
+  label,
+  value,
+  tone,
+  percent,
+}: {
+  label: string;
+  value: string;
+  tone: "success" | "warning" | "danger";
+  percent: number;
+}) => {
+  const { theme } = useTheme();
+  const styles = getStyles(theme, false);
+  const color =
+    tone === "success" ? tw.colors.emerald600 : tone === "warning" ? tw.colors.amber600 : tw.colors.rose600;
+
+  return (
+    <View style={styles.insightCard}>
+      <View style={styles.insightHeader}>
+        <Text style={styles.insightLabel}>{label}</Text>
+        <Text style={[styles.insightPercent, { color }]}>{percent}%</Text>
+      </View>
+      <Text style={styles.insightValue}>{value}</Text>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${Math.min(100, percent)}%`, backgroundColor: color }]} />
+      </View>
+    </View>
+  );
+};
+
 const getStyles = (theme: any, isPhone: boolean) =>
   StyleSheet.create({
     safeArea: {
@@ -164,13 +220,47 @@ const getStyles = (theme: any, isPhone: boolean) =>
       paddingTop: 18,
     },
     hero: {
+      flexDirection: isPhone ? "column" : "row",
+      justifyContent: "space-between",
+      alignItems: isPhone ? "stretch" : "center",
+      gap: 14,
       marginBottom: 18,
+    },
+    eyebrow: {
+      color: theme.colors.primary,
+      fontSize: 12,
+      fontWeight: "800",
+      textTransform: "uppercase",
+      marginBottom: 5,
+      textAlign: isPhone ? "left" : "center",
     },
     title: {
       color: theme.colors.text,
       fontSize: isPhone ? 28 : 34,
       fontWeight: "800",
       textAlign: isPhone ? "left" : "center",
+    },
+    healthPill: {
+      minWidth: 156,
+      borderRadius: tw.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.card,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      alignItems: "center",
+      ...shadow(theme.colors.cardShadow),
+    },
+    healthValue: {
+      color: theme.colors.primary,
+      fontSize: 26,
+      fontWeight: "800",
+    },
+    healthLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      fontWeight: "700",
+      marginTop: 2,
     },
     subtitle: {
       color: theme.colors.textMuted,
@@ -187,12 +277,57 @@ const getStyles = (theme: any, isPhone: boolean) =>
       flex: 1,
       minHeight: 102,
       backgroundColor: theme.colors.card,
-      borderRadius: 14,
+      borderRadius: tw.radius.lg,
       borderWidth: 1,
       borderColor: theme.colors.border,
       padding: 16,
       justifyContent: "center",
       ...shadow(theme.colors.cardShadow),
+    },
+    insightsGrid: {
+      flexDirection: isPhone ? "column" : "row",
+      marginBottom: 18,
+    },
+    insightCard: {
+      flex: 1,
+      backgroundColor: theme.colors.card,
+      borderRadius: tw.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: 16,
+      ...shadow(theme.colors.cardShadow),
+    },
+    insightHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 10,
+    },
+    insightLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 13,
+      fontWeight: "800",
+    },
+    insightPercent: {
+      fontSize: 18,
+      fontWeight: "800",
+    },
+    insightValue: {
+      color: theme.colors.text,
+      fontSize: 16,
+      fontWeight: "700",
+      marginTop: 8,
+    },
+    progressTrack: {
+      height: 8,
+      borderRadius: 999,
+      backgroundColor: theme.colors.background,
+      overflow: "hidden",
+      marginTop: 14,
+    },
+    progressFill: {
+      height: "100%",
+      borderRadius: 999,
     },
     statLabel: {
       color: theme.colors.textMuted,

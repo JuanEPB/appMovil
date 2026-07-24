@@ -18,6 +18,7 @@ import { useTheme } from "../context/ThemeContext";
 import { HeaderMenu } from "../components/HeaderMenu";
 import { FadeSlideIn as Fade } from "../components/FadeSlideIn";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
+import { isDemoToken, localDb } from "../data/localDb";
 
 export const MedicamentosScreen = () => {
   const { theme } = useTheme();
@@ -42,6 +43,10 @@ export const MedicamentosScreen = () => {
       setError(null);
       const token = await AsyncStorage.getItem("token");
       if (!token) throw new Error("No hay token");
+      if (isDemoToken(token)) {
+        setMedicamentos(await localDb.getMedicamentos());
+        return;
+      }
       const res = await apiPharma.get("/api/medicamentos/all", {
         headers: { Authorization: `Bearer ${token}` },
       });

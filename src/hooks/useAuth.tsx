@@ -19,6 +19,7 @@ interface AuthContextProps {
   error: string | null;
   tokenExpired: boolean;
   login: (data: LoginParams) => Promise<void>;
+  demoLogin: () => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updatedData: Partial<User>) => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -106,6 +107,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const demoLogin = async () => {
+    const demoUser: User = {
+      id: 1,
+      nombre: "Admin",
+      apellido: "Demo",
+      email: "admin@pharmacontrol.demo",
+      rol: "Administrador",
+      farmacia_id: 1,
+    };
+    const demoToken =
+      "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpYXQiOjE3MjAwMDAwMDAsImV4cCI6NDEwMjQ0NDgwMH0.demo";
+
+    await AsyncStorage.setItem("token", demoToken);
+    await AsyncStorage.setItem("refreshToken", "demo-refresh-token");
+    await AsyncStorage.setItem("user", JSON.stringify(demoUser));
+
+    setToken(demoToken);
+    setRefreshToken("demo-refresh-token");
+    setUser(demoUser);
+    setIsLogged(true);
+    setTokenExpired(false);
+    setLastActivity(Date.now());
+  };
+
   const refreshSession = async () => {
     if (!refreshToken || !isLogged) return;
     try {
@@ -181,6 +206,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         error,
         tokenExpired,
         login,
+        demoLogin,
         logout,
         updateUser,
         refreshSession,

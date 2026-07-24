@@ -1,7 +1,8 @@
-import React from "react";
-import { TouchableOpacity, Text, StyleSheet, ViewStyle } from "react-native";
+import React, { useRef } from "react";
+import { Animated, Pressable, Text, StyleSheet, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../context/ThemeContext";
+import { shadow } from "../utils/responsive";
 
 type Props = {
   title: string;
@@ -12,18 +13,31 @@ type Props = {
 
 export const GradientButton: React.FC<Props> = ({ title, onPress, style, iconLeft }) => {
   const { theme } = useTheme();
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const animate = (toValue: number) => {
+    Animated.spring(scale, {
+      toValue,
+      friction: 6,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
-    <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={[styles.wrapper, style]}>
-      <LinearGradient
-        colors={[theme.colors.primary, theme.colors.secondary]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradient}
-      >
-        {iconLeft}
-        <Text style={styles.text}>{title}</Text>
-      </LinearGradient>
-    </TouchableOpacity>
+    <Pressable onPress={onPress} onPressIn={() => animate(0.97)} onPressOut={() => animate(1)}>
+      <Animated.View style={[styles.wrapper, style, { transform: [{ scale }] }]}>
+        <LinearGradient
+          colors={[theme.colors.primary, theme.colors.secondary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.gradient, shadow(theme.colors.cardShadow)]}
+        >
+          {iconLeft}
+          <Text style={styles.text}>{title}</Text>
+        </LinearGradient>
+      </Animated.View>
+    </Pressable>
   );
 };
 
