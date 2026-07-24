@@ -1,6 +1,8 @@
 
 import { useEffect, useState } from 'react';
 import { getMedicamentosStats } from '../api/apiPharma';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isDemoToken, localDb } from '../data/localDb';
 
 interface StatsResponse {
   total: number;
@@ -18,6 +20,11 @@ export const useStats = () => {
     try {
       setLoading(true);
       setError(null);
+      const token = await AsyncStorage.getItem('token');
+      if (isDemoToken(token)) {
+        setStats(await localDb.getStats());
+        return;
+      }
       const data = await getMedicamentosStats();
       setStats(data);
     } catch (err) {

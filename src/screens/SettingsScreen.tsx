@@ -1,73 +1,125 @@
-import React from 'react';
-import { View, Text, Switch, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
-import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { HeaderMenu } from '../components/HeaderMenu';
-import { FadeSlideIn as Fade } from "../components/FadeSlideIn";
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import React from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import { useNavigation } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { HeaderMenu } from "../components/HeaderMenu";
+import { useTheme } from "../context/ThemeContext";
+import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
 
 export const SettingsScreen = () => {
   const { theme, toggleTheme } = useTheme();
-  const isDarkMode = theme.mode === 'dark';
-  const height = Dimensions.get('window').height;
   const navigation = useNavigation<any>();
+  const { width } = useWindowDimensions();
+  const layout = getLayout(width);
+  const isDarkMode = theme.mode === "dark";
+  const styles = getStyles(theme, layout.isPhone);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background, height }]}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
       <HeaderMenu />
-
-      {/* ---------- Card de tema ---------- */}
-      <View style={[styles.card, { backgroundColor: theme.colors.card, marginVertical: 16 }]}>
-        <View style={styles.optionRow}>
-          <Ionicons
-            name="moon"
-            size={22}
-            color={isDarkMode ? theme.colors.primary : theme.colors.textMuted}
-          />
-          <Text style={[styles.optionText, { color: theme.colors.text }]}>Tema oscuro</Text>
-          <Switch value={isDarkMode} onValueChange={toggleTheme} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          webMaxWidthStyle(width),
+          { paddingHorizontal: layout.pagePadding },
+        ]}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Configuracion</Text>
+          <Text style={styles.subtitle}>Preferencias de apariencia y cuenta.</Text>
         </View>
-      </View>
 
-      {/* ---------- Opción de perfil ---------- */}
-      <Fade delay={150}>
+        <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+          <View style={styles.optionRow}>
+            <View style={styles.iconText}>
+              <Ionicons
+                name="moon"
+                size={22}
+                color={isDarkMode ? theme.colors.primary : theme.colors.textMuted}
+              />
+              <Text style={[styles.optionText, { color: theme.colors.text }]}>Tema oscuro</Text>
+            </View>
+            <Switch value={isDarkMode} onValueChange={toggleTheme} />
+          </View>
+        </View>
+
         <TouchableOpacity
-          style={[styles.card, { backgroundColor: theme.colors.card, marginBottom: 16 }]}
+          style={[styles.card, { backgroundColor: theme.colors.card }]}
           onPress={() => navigation.navigate("Profile" as never)}
-          activeOpacity={0.9}
+          activeOpacity={0.85}
         >
           <View style={styles.optionRow}>
-            <FontAwesome5
-              name="user-alt"
-              size={22}
-              color={isDarkMode ? theme.colors.primary : theme.colors.textMuted}
-            />
-            <Text style={[styles.optionText, { color: theme.colors.text }]}>Perfil</Text>
+            <View style={styles.iconText}>
+              <FontAwesome5 name="user-alt" size={20} color={theme.colors.textMuted} />
+              <Text style={[styles.optionText, { color: theme.colors.text }]}>Perfil</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color={theme.colors.textMuted} />
           </View>
         </TouchableOpacity>
-      </Fade>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  card: {
-    padding: 16,
-    borderRadius: 16,
-    elevation: 3,
-  },
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  optionText: {
-    fontSize: 18,
-    fontWeight: '600',
-    flex: 1,
-    marginLeft: 10,
-  },
-});
+const getStyles = (theme: any, isPhone: boolean) =>
+  StyleSheet.create({
+    safeArea: { flex: 1 },
+    content: {
+      width: "100%",
+      alignSelf: "center",
+      gap: 14,
+      paddingTop: 18,
+      paddingBottom: 36,
+    },
+    header: {
+      marginBottom: 2,
+    },
+    title: {
+      color: theme.colors.text,
+      fontSize: isPhone ? 28 : 34,
+      fontWeight: "800",
+    },
+    subtitle: {
+      color: theme.colors.textMuted,
+      fontSize: 15,
+      lineHeight: 21,
+      marginTop: 5,
+    },
+    card: {
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: 16,
+      ...shadow(theme.colors.cardShadow),
+    },
+    optionRow: {
+      minHeight: 44,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 14,
+    },
+    iconText: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      minWidth: 0,
+    },
+    optionText: {
+      fontSize: 17,
+      fontWeight: "700",
+      flexShrink: 1,
+    },
+  });

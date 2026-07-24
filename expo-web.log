@@ -1,0 +1,314 @@
+
+> pharmacontrol@1.0.0 web
+> expo start --web
+
+Starting project at C:\Users\PROGRAMADORA\Desktop\appMovil
+Starting Metro Bundler
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+| [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+| [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+| [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Web .\index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 91.1% ( 999/1067)
+Web .\index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 91.1% (1154/1250)
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 10327ms index.ts (1406 modules)
+Web Bundled 5103ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+ LOG  [web] Logs will appear in the browser console
+Unable to resolve "../components/HeaderMenu" from "src\screens\DashboardScreen.tsx"
+[0m [90m 300 |[39m [36mimport[39m { useTheme } [36mfrom[39m [32m"../context/ThemeContext"[39m[33m;[39m
+ [90m 301 |[39m [36mimport[39m { [33mSafeAreaView[39m } [36mfrom[39m [32m"react-native-safe-area-context"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 302 |[39m [36mimport[39m { [33mHeaderMenu[39m } [36mfrom[39m [32m"../components/HeaderMenu"[39m[33m;[39m
+ [90m     |[39m                             [31m[1m^[22m[39m
+ [90m 303 |[39m
+ [90m 304 |[39m [36mconst[39m screenWidth [33m=[39m [33mDimensions[39m[33m.[39m[36mget[39m([32m"window"[39m)[33m.[39mwidth [33m-[39m [35m32[39m[33m;[39m
+ [90m 305 |[39m[0m
+
+Import stack:
+
+ src\screens\DashboardScreen.tsx
+ | import "../components/HeaderMenu"
+
+ src\navigation\drawerNavigator.tsx
+ | import "../screens/DashboardScreen"
+
+ src\navigation\stackNavigator.tsx
+ | import "./drawerNavigator"
+
+ App.tsx
+ | import "./src/navigation/stackNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
+Unable to resolve "../screens/LoginScreen" from "src\navigation\stackNavigator.tsx"
+[0m [90m 2 |[39m [36mimport[39m { createNativeStackNavigator } [36mfrom[39m [32m'@react-navigation/native-stack'[39m[33m;[39m
+ [90m 3 |[39m [36mimport[39m { useAuth } [36mfrom[39m [32m'../hooks/useAuth'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 4 |[39m [36mimport[39m { [33mLoginScreen[39m } [36mfrom[39m [32m'../screens/LoginScreen'[39m[33m;[39m
+ [90m   |[39m                              [31m[1m^[22m[39m
+ [90m 5 |[39m [36mimport[39m { [33mDashboardScreen[39m } [36mfrom[39m [32m'../screens/DashboardScreen'[39m[33m;[39m
+ [90m 6 |[39m [36mimport[39m { [33mTabNavigator[39m } [36mfrom[39m [32m'../navigation/TabNavigator'[39m[33m;[39m
+ [90m 7 |[39m [36mimport[39m { useTheme } [36mfrom[39m [32m'../context/ThemeContext'[39m[33m;[39m [90m// ✅ usa tu contexto[39m[0m
+
+Import stack:
+
+ src\navigation\stackNavigator.tsx
+ | import "../screens/LoginScreen"
+
+ App.tsx
+ | import "./src/navigation/stackNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
+Unable to resolve "../screens/DashboardScreen" from "src\navigation\drawerNavigator.tsx"
+[0m [90m 1 |[39m [36mimport[39m [33mReact[39m [36mfrom[39m [32m"react"[39m[33m;[39m
+ [90m 2 |[39m [36mimport[39m { createDrawerNavigator } [36mfrom[39m [32m"@react-navigation/drawer"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m {[33mDashboardScreen[39m} [36mfrom[39m [32m"../screens/DashboardScreen"[39m[33m;[39m
+ [90m   |[39m                                [31m[1m^[22m[39m
+ [90m 4 |[39m [36mimport[39m { [33mSettingsScreen[39m } [36mfrom[39m [32m"../screens/SettingsScreen"[39m[33m;[39m
+ [90m 5 |[39m [36mimport[39m { [33mChatScreen[39m } [36mfrom[39m [32m"../screens/ChatScreen"[39m[33m;[39m
+ [90m 6 |[39m [36mimport[39m { [33mProfileScreen[39m } [36mfrom[39m [32m"../screens/ProfileScreen"[39m[33m;[39m[0m
+
+Import stack:
+
+ src\navigation\drawerNavigator.tsx
+ | import "../screens/DashboardScreen"
+
+ src\navigation\stackNavigator.tsx
+ | import "./drawerNavigator"
+
+ App.tsx
+ | import "./src/navigation/stackNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
+Unable to resolve "../screens/MedicamentosScreen" from "src\navigation\drawerNavigator.tsx"
+[0m [90m  7 |[39m [36mimport[39m { [33mDocumentsScreen[39m } [36mfrom[39m [32m"../screens/DocumentsScreen"[39m[33m;[39m
+ [90m  8 |[39m [36mimport[39m { [33mSidebar[39m } [36mfrom[39m [32m"../components/Sidebar"[39m[33m;[39m
+[31m[1m>[22m[39m[90m  9 |[39m [36mimport[39m { [33mMedicamentosScreen[39m } [36mfrom[39m [32m"../screens/MedicamentosScreen"[39m[33m;[39m
+ [90m    |[39m                                     [31m[1m^[22m[39m
+ [90m 10 |[39m [36mimport[39m { [33mFormMedicament[39m } [36mfrom[39m [32m"../screens/FormMedicament"[39m[33m;[39m
+ [90m 11 |[39m [36mimport[39m { [33mCalendarScreen[39m } [36mfrom[39m [32m"../screens/CalendarScreen"[39m[33m;[39m
+ [90m 12 |[39m [36mimport[39m { [33mEditProfileScreen[39m } [36mfrom[39m [32m"../screens/EditProfileScreen"[39m[33m;[39m[0m
+
+Import stack:
+
+ src\navigation\drawerNavigator.tsx
+ | import "../screens/MedicamentosScreen"
+
+ src\navigation\stackNavigator.tsx
+ | import "./drawerNavigator"
+
+ App.tsx
+ | import "./src/navigation/stackNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
+Unable to resolve "../screens/SettingsScreen" from "src\navigation\drawerNavigator.tsx"
+[0m [90m 2 |[39m [36mimport[39m { createDrawerNavigator } [36mfrom[39m [32m"@react-navigation/drawer"[39m[33m;[39m
+ [90m 3 |[39m [36mimport[39m {[33mDashboardScreen[39m} [36mfrom[39m [32m"../screens/DashboardScreen"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 4 |[39m [36mimport[39m { [33mSettingsScreen[39m } [36mfrom[39m [32m"../screens/SettingsScreen"[39m[33m;[39m
+ [90m   |[39m                                 [31m[1m^[22m[39m
+ [90m 5 |[39m [36mimport[39m { [33mChatScreen[39m } [36mfrom[39m [32m"../screens/ChatScreen"[39m[33m;[39m
+ [90m 6 |[39m [36mimport[39m { [33mProfileScreen[39m } [36mfrom[39m [32m"../screens/ProfileScreen"[39m[33m;[39m
+ [90m 7 |[39m [36mimport[39m { [33mDocumentsScreen[39m } [36mfrom[39m [32m"../screens/DocumentsScreen"[39m[33m;[39m[0m
+
+Import stack:
+
+ src\navigation\drawerNavigator.tsx
+ | import "../screens/SettingsScreen"
+
+ src\navigation\stackNavigator.tsx
+ | import "./drawerNavigator"
+
+ App.tsx
+ | import "./src/navigation/stackNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 396ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Unable to resolve "../screens/ProfileScreen" from "src\navigation\drawerNavigator.tsx"
+[0m [90m 4 |[39m [36mimport[39m { [33mSettingsScreen[39m } [36mfrom[39m [32m"../screens/SettingsScreen"[39m[33m;[39m
+ [90m 5 |[39m [36mimport[39m { [33mChatScreen[39m } [36mfrom[39m [32m"../screens/ChatScreen"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 6 |[39m [36mimport[39m { [33mProfileScreen[39m } [36mfrom[39m [32m"../screens/ProfileScreen"[39m[33m;[39m
+ [90m   |[39m                                [31m[1m^[22m[39m
+ [90m 7 |[39m [36mimport[39m { [33mDocumentsScreen[39m } [36mfrom[39m [32m"../screens/DocumentsScreen"[39m[33m;[39m
+ [90m 8 |[39m [36mimport[39m { [33mSidebar[39m } [36mfrom[39m [32m"../components/Sidebar"[39m[33m;[39m
+ [90m 9 |[39m [36mimport[39m { [33mMedicamentosScreen[39m } [36mfrom[39m [32m"../screens/MedicamentosScreen"[39m[33m;[39m[0m
+
+Import stack:
+
+ src\navigation\drawerNavigator.tsx
+ | import "../screens/ProfileScreen"
+
+ src\navigation\stackNavigator.tsx
+ | import "./drawerNavigator"
+
+ App.tsx
+ | import "./src/navigation/stackNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
+Unable to resolve "../screens/EditProfileScreen" from "src\navigation\drawerNavigator.tsx"
+[0m [90m 10 |[39m [36mimport[39m { [33mFormMedicament[39m } [36mfrom[39m [32m"../screens/FormMedicament"[39m[33m;[39m
+ [90m 11 |[39m [36mimport[39m { [33mCalendarScreen[39m } [36mfrom[39m [32m"../screens/CalendarScreen"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 12 |[39m [36mimport[39m { [33mEditProfileScreen[39m } [36mfrom[39m [32m"../screens/EditProfileScreen"[39m[33m;[39m
+ [90m    |[39m                                    [31m[1m^[22m[39m
+ [90m 13 |[39m
+ [90m 14 |[39m [36mexport[39m type [33mRootDrawerParamList[39m [33m=[39m {
+ [90m 15 |[39m   [33mDashboard[39m[33m:[39m undefined[33m;[39m[0m
+
+Import stack:
+
+ src\navigation\drawerNavigator.tsx
+ | import "../screens/EditProfileScreen"
+
+ src\navigation\stackNavigator.tsx
+ | import "./drawerNavigator"
+
+ App.tsx
+ | import "./src/navigation/stackNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
+Unable to resolve "../screens/ChatScreen" from "src\navigation\drawerNavigator.tsx"
+[0m [90m 3 |[39m [36mimport[39m {[33mDashboardScreen[39m} [36mfrom[39m [32m"../screens/DashboardScreen"[39m[33m;[39m
+ [90m 4 |[39m [36mimport[39m { [33mSettingsScreen[39m } [36mfrom[39m [32m"../screens/SettingsScreen"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m { [33mChatScreen[39m } [36mfrom[39m [32m"../screens/ChatScreen"[39m[33m;[39m
+ [90m   |[39m                             [31m[1m^[22m[39m
+ [90m 6 |[39m [36mimport[39m { [33mProfileScreen[39m } [36mfrom[39m [32m"../screens/ProfileScreen"[39m[33m;[39m
+ [90m 7 |[39m [36mimport[39m { [33mDocumentsScreen[39m } [36mfrom[39m [32m"../screens/DocumentsScreen"[39m[33m;[39m
+ [90m 8 |[39m [36mimport[39m { [33mSidebar[39m } [36mfrom[39m [32m"../components/Sidebar"[39m[33m;[39m[0m
+
+Import stack:
+
+ src\navigation\drawerNavigator.tsx
+ | import "../screens/ChatScreen"
+
+ src\navigation\stackNavigator.tsx
+ | import "./drawerNavigator"
+
+ App.tsx
+ | import "./src/navigation/stackNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
+Unable to resolve "../screens/CalendarScreen" from "src\navigation\drawerNavigator.tsx"
+[0m [90m  9 |[39m [36mimport[39m { [33mMedicamentosScreen[39m } [36mfrom[39m [32m"../screens/MedicamentosScreen"[39m[33m;[39m
+ [90m 10 |[39m [36mimport[39m { [33mFormMedicament[39m } [36mfrom[39m [32m"../screens/FormMedicament"[39m[33m;[39m
+[31m[1m>[22m[39m[90m 11 |[39m [36mimport[39m { [33mCalendarScreen[39m } [36mfrom[39m [32m"../screens/CalendarScreen"[39m[33m;[39m
+ [90m    |[39m                                 [31m[1m^[22m[39m
+ [90m 12 |[39m [36mimport[39m { [33mEditProfileScreen[39m } [36mfrom[39m [32m"../screens/EditProfileScreen"[39m[33m;[39m
+ [90m 13 |[39m
+ [90m 14 |[39m [36mexport[39m type [33mRootDrawerParamList[39m [33m=[39m {[0m
+
+Import stack:
+
+ src\navigation\drawerNavigator.tsx
+ | import "../screens/CalendarScreen"
+
+ src\navigation\stackNavigator.tsx
+ | import "./drawerNavigator"
+
+ App.tsx
+ | import "./src/navigation/stackNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
+Unable to resolve "../components/Sidebar" from "src\navigation\drawerNavigator.tsx"
+[0m [90m  6 |[39m [36mimport[39m { [33mProfileScreen[39m } [36mfrom[39m [32m"../screens/ProfileScreen"[39m[33m;[39m
+ [90m  7 |[39m [36mimport[39m { [33mDocumentsScreen[39m } [36mfrom[39m [32m"../screens/DocumentsScreen"[39m[33m;[39m
+[31m[1m>[22m[39m[90m  8 |[39m [36mimport[39m { [33mSidebar[39m } [36mfrom[39m [32m"../components/Sidebar"[39m[33m;[39m
+ [90m    |[39m                          [31m[1m^[22m[39m
+ [90m  9 |[39m [36mimport[39m { [33mMedicamentosScreen[39m } [36mfrom[39m [32m"../screens/MedicamentosScreen"[39m[33m;[39m
+ [90m 10 |[39m [36mimport[39m { [33mFormMedicament[39m } [36mfrom[39m [32m"../screens/FormMedicament"[39m[33m;[39m
+ [90m 11 |[39m [36mimport[39m { [33mCalendarScreen[39m } [36mfrom[39m [32m"../screens/CalendarScreen"[39m[33m;[39m[0m
+
+Import stack:
+
+ src\navigation\drawerNavigator.tsx
+ | import "../components/Sidebar"
+
+ src\navigation\stackNavigator.tsx
+ | import "./drawerNavigator"
+
+ App.tsx
+ | import "./src/navigation/stackNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 219ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 160ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+Unable to resolve "../screens/DocumentsScreen" from "src\navigation\drawerNavigator.tsx"
+[0m [90m  5 |[39m [36mimport[39m { [33mChatScreen[39m } [36mfrom[39m [32m"../screens/ChatScreen"[39m[33m;[39m
+ [90m  6 |[39m [36mimport[39m { [33mProfileScreen[39m } [36mfrom[39m [32m"../screens/ProfileScreen"[39m[33m;[39m
+[31m[1m>[22m[39m[90m  7 |[39m [36mimport[39m { [33mDocumentsScreen[39m } [36mfrom[39m [32m"../screens/DocumentsScreen"[39m[33m;[39m
+ [90m    |[39m                                  [31m[1m^[22m[39m
+ [90m  8 |[39m [36mimport[39m { [33mSidebar[39m } [36mfrom[39m [32m"../components/Sidebar"[39m[33m;[39m
+ [90m  9 |[39m [36mimport[39m { [33mMedicamentosScreen[39m } [36mfrom[39m [32m"../screens/MedicamentosScreen"[39m[33m;[39m
+ [90m 10 |[39m [36mimport[39m { [33mFormMedicament[39m } [36mfrom[39m [32m"../screens/FormMedicament"[39m[33m;[39m[0m
+
+Import stack:
+
+ src\navigation\drawerNavigator.tsx
+ | import "../screens/DocumentsScreen"
+
+ src\navigation\stackNavigator.tsx
+ | import "./drawerNavigator"
+
+ App.tsx
+ | import "./src/navigation/stackNavigator"
+
+ index.ts
+ | import "./App"
+
+ 
+ | import "./index.ts"
+
