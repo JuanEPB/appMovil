@@ -109,6 +109,7 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = ({ navigation, sta
         >
           <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} />
         </TouchableOpacity>
+
       </View>
     </SafeAreaView>
   );
