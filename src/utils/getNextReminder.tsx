@@ -23,7 +23,10 @@ export async function getNextReminder(): Promise<Recordatorio | null> {
 
     // Ordena por fecha más próxima
     futuras.sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
-    return futuras[0];
+    return {
+      ...futuras[0],
+      fecha: futuras[0].fecha.toISOString(),
+    };
   } catch (e) {
     console.error("Error leyendo recordatorios:", e);
     return null;

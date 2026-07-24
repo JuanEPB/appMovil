@@ -1,180 +1,76 @@
-// import React, { useState } from "react";
-// import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Dimensions, Image } from "react-native";
-// import { LinearGradient } from "expo-linear-gradient";
-// import { useTheme } from "../context/ThemeContext";
-// import { GradientButton } from "../components/GradientButton";
-// import { useAuth } from "../hooks/useAuth";
-
-// const h = Dimensions.get("window").height;
-// const w = Dimensions.get("window").width;
-
-// export const LoginScreen =() => {
-//   const { theme } = useTheme();
-//   const { login, isLoading } = useAuth?.() ?? { login: async () => {}, isLoading: false };
-//   const [email, setEmail] = useState("");
-//   const [password, setPassword] = useState("");
-
-//   const styles = getStyles(theme);
-
-//   const handleLogin = async () => {
-//     await login?.({ email, contraseña: password });
-//   };
-
-//   return (
-//     <View style={[styles.container, { justifyContent: "center",  }]}>
-//       <LinearGradient colors={["#7298c4ff", "#113052ff"]} style={styles.hero} />
-//       <View style={{ flex: 0.4, height: h * 0.4, justifyContent: "center", alignItems: "center", marginBottom: 20 }}>
-//         <Image source={require("../../assets/logo1.png")} style={{ width: w * 0.5, height: h * 0.2, resizeMode: "contain" }} />
-//       </View>
-//       <View style={[styles.card, { shadowColor: theme.colors.cardShadow }]}>
-//         <Text style={styles.title}>Bienvenido a Pharmacontrol</Text>
-
-//         <TextInput
-//           placeholder="Correo Electrónico"
-//           placeholderTextColor={theme.colors.textMuted}
-//           value={email}
-//           onChangeText={setEmail}
-//           style={styles.input}
-//           autoCapitalize="none"
-          
-//         />
-//         <TextInput
-//           placeholder="Contraseña"
-//           placeholderTextColor={theme.colors.textMuted}
-//           value={password}
-//           onChangeText={setPassword}
-//           style={styles.input}
-//           secureTextEntry
-          
-//         />
-
-//         <TouchableOpacity>
-//           <Text style={{ color: theme.colors.primary, fontWeight: "600", marginBottom: 12, textAlign: "center" }}>
-//             ¿Olvidaste tu contraseña? 
-//             Contacta a tu administrador
-//           </Text>
-//         </TouchableOpacity>
-
-//         <GradientButton title={isLoading ? "Ingresando..." : "Iniciar Sesión"} onPress={handleLogin} />
-//       </View>
-//     </View>
-//   );
-// }
-
-// const getStyles = (theme: any) =>
-//   StyleSheet.create({
-//     container: { flex: 1, backgroundColor: theme.colors.background,  },
-//     hero: { ...StyleSheet.absoluteFillObject },
-//     card: {
-//       marginHorizontal: 16,
-//       backgroundColor: theme.colors.card,
-//       borderRadius: 20,
-//       padding: 18,
-//       gap: 10,
-//       shadowColor: "#000",
-//       shadowOpacity: 0.08,
-//       shadowRadius: 8,
-//       elevation: 3,
-//       shadowOffset: { width: 0, height: 4 },
-      
-
-//     },
-//     title: { fontSize: 20, fontWeight: "800", color: theme.colors.text, marginBottom: 12, textAlign: "center" },
-//     input: {
-//       backgroundColor: theme.colors.background,
-//       padding: 12,
-//       borderRadius: 12,
-//       borderWidth: 1,
-//       borderColor: theme.colors.border,
-//       color: theme.colors.text,
-//     },
-//   });
-import React, { useState } from "react";
-import { 
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  Dimensions,
+import React, { useMemo, useState } from "react";
+import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  Alert
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../context/ThemeContext";
 import { GradientButton } from "../components/GradientButton";
 import { useAuth } from "../hooks/useAuth";
-
-const h = Dimensions.get("window").height;
-const w = Dimensions.get("window").width;
+import { getLayout, shadow } from "../utils/responsive";
 
 export const LoginScreen = () => {
   const { theme } = useTheme();
-  const { login, isLoading } = useAuth?.() ?? { login: async () => {}, isLoading: false };
+  const { login, demoLogin, isLoading } =
+    useAuth?.() ?? { login: async () => {}, demoLogin: async () => {}, isLoading: false };
+  const { width } = useWindowDimensions();
+  const layout = getLayout(width);
+  const styles = useMemo(() => getStyles(theme, layout.isPhone), [theme, layout.isPhone]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const styles = getStyles(theme);
-
   const handleLogin = async () => {
-    // Validación simple
-    if (!email.trim() || !password.trim()) {
-      Alert.alert("Error", "Todos los campos son obligatorios");
-      return;
-    }
-
-    try {
-      await login?.({ email, contraseña: password });
-    } catch (error) {
-      Alert.alert("Error", "Usuario o contraseña incorrectos");
-    }
+    await login?.({ email, contraseña: password });
   };
 
   return (
     <KeyboardAvoidingView
-      key="login-screen"
-      style={{ flex: 1 }}
+      style={styles.root}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={[styles.container, { justifyContent: "center" }]}>
-        <LinearGradient colors={["#7298c4ff", "#113052ff"]} style={styles.hero} />
+      <LinearGradient
+        colors={theme.dark ? ["#0D1117", "#123B5A"] : ["#EAF6FF", "#BDE7F6", "#FFFFFF"]}
+        style={StyleSheet.absoluteFill}
+      />
 
-        <View
-          style={{
-            flex: 0.4,
-            height: h * 0.4,
-            justifyContent: "center",
-            alignItems: "center",
-            marginBottom: 20,
-          }}
-        >
-          <Image
-            source={require("../../assets/logo1.png")}
-            style={{
-              width: w * 0.5,
-              height: h * 0.2,
-              resizeMode: "contain",
-            }}
-          />
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          { paddingHorizontal: layout.pagePadding, gap: layout.gap },
+        ]}
+      >
+        <View style={[styles.brandPanel, !layout.isPhone && styles.brandPanelWide]}>
+          <Image source={require("../../assets/logo1.png")} style={styles.logo} />
+          <Text style={styles.brand}>PharmaControl</Text>
+          <Text style={styles.caption}>Control inteligente para tu farmacia</Text>
         </View>
 
-        <View style={[styles.card, { shadowColor: theme.colors.cardShadow }]}>
-          <Text style={styles.title}>Bienvenido a Pharmacontrol</Text>
+        <View style={[styles.card, { maxWidth: layout.isPhone ? "100%" : 430 }]}>
+          <Text style={styles.title}>Iniciar sesion</Text>
+          <Text style={styles.subtitle}>Accede a tu inventario, reportes y recordatorios.</Text>
 
           <TextInput
-            placeholder="Correo Electrónico"
+            placeholder="Correo electronico"
             placeholderTextColor={theme.colors.textMuted}
             value={email}
             onChangeText={setEmail}
             style={styles.input}
             autoCapitalize="none"
+            keyboardType="email-address"
           />
 
           <TextInput
-            placeholder="Contraseña"
+            placeholder="Contrasena"
             placeholderTextColor={theme.colors.textMuted}
             value={password}
             onChangeText={setPassword}
@@ -182,65 +78,116 @@ export const LoginScreen = () => {
             secureTextEntry
           />
 
-          <TouchableOpacity>
-            <Text
-              style={{
-                color: theme.colors.primary,
-                fontWeight: "600",
-                marginBottom: 12,
-                textAlign: "center",
-              }}
-            >
-              ¿Olvidaste tu contraseña?
-              {"\n"}
-              Contacta a tu administrador
+          <TouchableOpacity activeOpacity={0.75}>
+            <Text style={styles.helpText}>
+              Olvidaste tu contrasena? Contacta a tu administrador.
             </Text>
           </TouchableOpacity>
 
           <GradientButton
-            title={isLoading ? "Ingresando..." : "Iniciar Sesión"}
+            title={isLoading ? "Ingresando..." : "Iniciar sesion"}
             onPress={handleLogin}
           />
+
+          <TouchableOpacity style={styles.demoButton} onPress={demoLogin} activeOpacity={0.8}>
+            <Text style={styles.demoButtonText}>Entrar en modo demo</Text>
+          </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
 
-const getStyles = (theme: any) =>
+const getStyles = (theme: any, isPhone: boolean) =>
   StyleSheet.create({
-    container: {
+    root: {
       flex: 1,
       backgroundColor: theme.colors.background,
     },
-    hero: {
-      ...StyleSheet.absoluteFillObject,
+    content: {
+      flexGrow: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: isPhone ? 28 : 48,
+    },
+    brandPanel: {
+      alignItems: "center",
+      width: "100%",
+    },
+    brandPanelWide: {
+      marginBottom: 6,
+    },
+    logo: {
+      width: isPhone ? 132 : 170,
+      height: isPhone ? 132 : 170,
+      resizeMode: "contain",
+    },
+    brand: {
+      color: theme.colors.text,
+      fontSize: isPhone ? 28 : 34,
+      fontWeight: "800",
+      textAlign: "center",
+      marginTop: 4,
+    },
+    caption: {
+      color: theme.colors.textMuted,
+      fontSize: 15,
+      textAlign: "center",
+      marginTop: 4,
     },
     card: {
-      marginHorizontal: 16,
+      width: "100%",
       backgroundColor: theme.colors.card,
-      borderRadius: 20,
-      padding: 18,
-      gap: 10,
-      shadowColor: "#000",
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
-      elevation: 3,
-      shadowOffset: { width: 0, height: 4 },
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: isPhone ? 18 : 24,
+      gap: 12,
+      ...shadow(theme.colors.cardShadow),
     },
     title: {
-      fontSize: 20,
-      fontWeight: "800",
       color: theme.colors.text,
-      marginBottom: 12,
+      fontSize: 22,
+      fontWeight: "800",
       textAlign: "center",
     },
+    subtitle: {
+      color: theme.colors.textMuted,
+      fontSize: 14,
+      lineHeight: 20,
+      textAlign: "center",
+      marginBottom: 4,
+    },
     input: {
+      minHeight: 48,
       backgroundColor: theme.colors.background,
-      padding: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
       borderRadius: 12,
       borderWidth: 1,
       borderColor: theme.colors.border,
       color: theme.colors.text,
+      fontSize: 15,
+    },
+    helpText: {
+      color: theme.colors.primary,
+      fontWeight: "600",
+      lineHeight: 20,
+      marginBottom: 2,
+      textAlign: "center",
+    },
+    demoButton: {
+      minHeight: 46,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.background,
+    },
+    demoButtonText: {
+      color: theme.colors.text,
+      fontWeight: "800",
+      fontSize: 15,
     },
   });
