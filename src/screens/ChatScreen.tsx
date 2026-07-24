@@ -1,83 +1,158 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ScrollView } from "react-native";
-import { useTheme } from "../context/ThemeContext";
+import React, { useMemo, useState } from "react";
+import {
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
 import axios from "axios";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HeaderMenu } from "../components/HeaderMenu";
+import { useTheme } from "../context/ThemeContext";
+import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
 
 export const ChatScreen = () => {
   const { theme } = useTheme();
-  const styles = getStyles(theme);
+  const { width } = useWindowDimensions();
+  const layout = getLayout(width);
+  const styles = useMemo(() => getStyles(theme, layout.isPhone), [theme, layout.isPhone]);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
 
   const sendMessage = async () => {
-    if (!input.trim()) return;
-    const newMsg = { role: "user", content: input };
-    setMessages([...messages, newMsg]);
+    const text = input.trim();
+    if (!text) return;
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
     setInput("");
 
     try {
-      const res = await axios.post("https://tuapi.com/api/chat", { message: input });
-      const aiMsg = { role: "ai", content: res.data.response };
-      setMessages((prev) => [...prev, aiMsg]);
-    } catch (e) {
-      setMessages((prev) => [...prev, { role: "ai", content: "⚠️ Error de conexión con la IA." }]);
+      const res = await axios.post("https://tuapi.com/api/chat", { message: text });
+      setMessages((prev) => [...prev, { role: "ai", content: res.data.response }]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "ai", content: "No se pudo conectar con la IA en este momento." },
+      ]);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-        <ScrollView
-        showsVerticalScrollIndicator={false}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 50 }}
+    <SafeAreaView style={styles.safeArea}>
+      <HeaderMenu />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.keyboard}
+      >
+        <View
+          style={[
+            styles.shell,
+            webMaxWidthStyle(width),
+            { paddingHorizontal: layout.pagePadding },
+          ]}
         >
-        <HeaderMenu/>
-      <FlatList
-        data={messages}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.msg,
-              item.role === "user" ? styles.userMsg : styles.aiMsg,
-            ]}
-          >
-            <Text style={styles.msgText}>{item.content}</Text>
+          <View style={styles.header}>
+            <Text style={styles.title}>Chat IA</Text>
+            <Text style={styles.subtitle}>Consulta dudas rapidas sobre inventario y reportes.</Text>
           </View>
-        )}
-        keyExtractor={(_, i) => i.toString()}
-        contentContainerStyle={{ padding: 10 }}
-      />
 
-      <View style={styles.inputRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="Escribe tu mensaje..."
-          placeholderTextColor={theme.colors.textMuted}
-          value={input}
-          onChangeText={setInput}
-        />
-        <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>Enviar</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <FlatList
+            data={messages}
+            keyExtractor={(_, i) => i.toString()}
+            contentContainerStyle={styles.messages}
+            ListEmptyComponent={
+              <View style={styles.empty}>
+                <Feather name="message-circle" size={32} color={theme.colors.textMuted} />
+                <Text style={styles.emptyTitle}>Sin mensajes</Text>
+                <Text style={styles.emptyText}>Escribe una consulta para comenzar.</Text>
+              </View>
+            }
+            renderItem={({ item }) => {
+              const isUser = item.role === "user";
+              return (
+                <View style={[styles.message, isUser ? styles.userMsg : styles.aiMsg]}>
+                  <Text style={[styles.messageText, isUser && styles.userText]}>{item.content}</Text>
+                </View>
+              );
+            }}
+          />
+
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="Escribe tu mensaje..."
+              placeholderTextColor={theme.colors.textMuted}
+              value={input}
+              onChangeText={setInput}
+              multiline
+            />
+            <TouchableOpacity style={styles.sendBtn} onPress={sendMessage} activeOpacity={0.85}>
+              <Feather name="send" size={19} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
 
-const getStyles = (theme: any) =>
+const getStyles = (theme: any, isPhone: boolean) =>
   StyleSheet.create({
-    container: {
+    safeArea: { flex: 1, backgroundColor: theme.colors.background },
+    keyboard: { flex: 1 },
+    shell: {
       flex: 1,
-      backgroundColor: theme.colors.background,
+      alignSelf: "center",
+      width: "100%",
+      paddingTop: 18,
+      paddingBottom: 14,
     },
-    msg: {
-      marginVertical: 6,
-      padding: 10,
-      borderRadius: 10,
-      maxWidth: "80%",
+    header: { marginBottom: 12 },
+    title: {
+      color: theme.colors.text,
+      fontSize: isPhone ? 28 : 34,
+      fontWeight: "800",
+    },
+    subtitle: {
+      color: theme.colors.textMuted,
+      fontSize: 15,
+      lineHeight: 21,
+      marginTop: 5,
+    },
+    messages: {
+      flexGrow: 1,
+      gap: 10,
+      paddingVertical: 10,
+    },
+    empty: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 260,
+      backgroundColor: theme.colors.card,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 16,
+      padding: 24,
+      ...shadow(theme.colors.cardShadow),
+    },
+    emptyTitle: {
+      color: theme.colors.text,
+      fontSize: 18,
+      fontWeight: "800",
+      marginTop: 10,
+    },
+    emptyText: { color: theme.colors.textMuted, marginTop: 4, textAlign: "center" },
+    message: {
+      maxWidth: isPhone ? "88%" : "70%",
+      borderRadius: 16,
+      paddingHorizontal: 14,
+      paddingVertical: 11,
     },
     userMsg: {
       alignSelf: "flex-end",
@@ -89,26 +164,36 @@ const getStyles = (theme: any) =>
       borderWidth: 1,
       borderColor: theme.colors.border,
     },
-    msgText: { color: theme.colors.text },
+    messageText: { color: theme.colors.text, fontSize: 15, lineHeight: 21 },
+    userText: { color: "#fff" },
     inputRow: {
       flexDirection: "row",
-      padding: 10,
-      borderTopWidth: 1,
+      alignItems: "flex-end",
+      gap: 10,
+      borderWidth: 1,
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.card,
+      borderRadius: 16,
+      padding: 10,
+      ...shadow(theme.colors.cardShadow),
     },
     input: {
       flex: 1,
+      maxHeight: 120,
+      minHeight: 44,
       backgroundColor: theme.colors.background,
-      borderRadius: 10,
+      borderRadius: 12,
       paddingHorizontal: 12,
+      paddingVertical: 11,
       color: theme.colors.text,
+      fontSize: 15,
     },
     sendBtn: {
-      backgroundColor: theme.colors.primary,
-      paddingHorizontal: 16,
-      marginLeft: 8,
-      borderRadius: 10,
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      alignItems: "center",
       justifyContent: "center",
+      backgroundColor: theme.colors.primary,
     },
   });

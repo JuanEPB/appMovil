@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Dimensions,
+  useWindowDimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,14 +22,15 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Feather from "@expo/vector-icons/Feather";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-
-const h = Dimensions.get("window").height;
-const w = Dimensions.get("window").width;
+import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
+import { isDemoToken, localDb } from "../data/localDb";
 
 export const FormMedicament = () => {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
-  const styles = useMemo(() => getStyles(theme), [theme]);
+  const { width } = useWindowDimensions();
+  const layout = getLayout(width);
+  const styles = useMemo(() => getStyles(theme, layout.isPhone), [theme, layout.isPhone]);
 
   // Estados
   const [nombre, setNombre] = useState("");
@@ -51,6 +52,15 @@ export const FormMedicament = () => {
     const fetchData = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
+        if (isDemoToken(token)) {
+          const [localCategorias, localProveedores] = await Promise.all([
+            localDb.getCategorias(),
+            localDb.getProveedores(),
+          ]);
+          setCategorias(localCategorias);
+          setProveedores(localProveedores);
+          return;
+        }
         const headers = { Authorization: `Bearer ${token}` };
 
         const [catRes, provRes] = await Promise.all([
@@ -73,6 +83,22 @@ export const FormMedicament = () => {
       setSaving(true);
       const token = await AsyncStorage.getItem("token");
       if (!token) throw new Error("No token");
+      if (isDemoToken(token)) {
+        await localDb.createMedicamento({
+          nombre,
+          lote,
+          stock: Number(stock || 0),
+          caducidad,
+          categoriaId,
+          proveedorId,
+        });
+        setOk(true);
+        setTimeout(() => {
+          setOk(false);
+          navigation.navigate("Medicamentos" as never);
+        }, 900);
+        return;
+      }
 
       const payload = {
         nombre,
@@ -102,11 +128,11 @@ export const FormMedicament = () => {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <KeyboardAvoidingView
-        style={{ flex: 1, height: h, width: w }}
+        style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
-          contentContainerStyle={[styles.container]}
+          contentContainerStyle={[styles.container, { paddingHorizontal: layout.pagePadding }]}
           showsVerticalScrollIndicator={false}
         >
           {/* 🔹 Header animado con degradado */}
@@ -122,11 +148,13 @@ export const FormMedicament = () => {
               >
                 <Feather name="arrow-left" size={22} color="#fff" />
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>Agregar Medicamento</Text>
+              <Text style={styles.headerTitle}>Agregar medicamento</Text>
+              <Text style={styles.headerSubtitle}>Registra lote, stock y caducidad.</Text>
             </LinearGradient>
           </Fade>
 
           {/* ---------- CAMPOS ---------- */}
+          <View style={[styles.formCard, webMaxWidthStyle(width)]}>
           <Fade delay={100}>
             <View style={styles.field}>
               <Text style={styles.label}>Nombre</Text>
@@ -292,6 +320,7 @@ export const FormMedicament = () => {
               <Text style={styles.buttonText}>Cancelar</Text>
             </TouchableOpacity>
           </Fade>
+          </View>
         </ScrollView>
 
         <SuccessModal
@@ -305,33 +334,30 @@ export const FormMedicament = () => {
   );
 };
 
-const getStyles = (theme: any) =>
+const getStyles = (theme: any, isPhone: boolean) =>
   StyleSheet.create({
     container: {
-      padding: 18,
-      paddingTop: 10,
+      paddingVertical: isPhone ? 16 : 24,
       backgroundColor: theme.colors.background,
       flexGrow: 1,
+      alignItems: "center",
     },
     header: {
       width: "100%",
-      height: 120,
-      borderBottomLeftRadius: 30,
-      borderBottomRightRadius: 30,
-      justifyContent: "flex-end",
+      maxWidth: 1120,
+      minHeight: isPhone ? 116 : 140,
+      borderRadius: 18,
+      justifyContent: "center",
       alignItems: "center",
-      paddingBottom: 12,
+      padding: 18,
       marginBottom: 16,
-      shadowColor: "#000",
-      shadowOpacity: 0.2,
-      shadowRadius: 5,
-      elevation: 3,
       position: "relative",
+      ...shadow(theme.colors.cardShadow),
     },
     backButton: {
       position: "absolute",
-      top: 10,
-      left: 20,
+      top: 14,
+      left: 14,
       backgroundColor: "rgba(255, 255, 255, 0.25)",
       padding: 8,
       borderRadius: 10,
@@ -343,7 +369,24 @@ const getStyles = (theme: any) =>
     headerTitle: {
       color: "#fff",
       fontWeight: "800",
-      fontSize: 20,
+      fontSize: isPhone ? 22 : 28,
+      textAlign: "center",
+    },
+    headerSubtitle: {
+      color: "#fff",
+      fontSize: 14,
+      marginTop: 6,
+      opacity: 0.9,
+      textAlign: "center",
+    },
+    formCard: {
+      backgroundColor: theme.colors.card,
+      borderColor: theme.colors.border,
+      borderWidth: 1,
+      borderRadius: 16,
+      padding: isPhone ? 16 : 22,
+      maxWidth: 720,
+      ...shadow(theme.colors.cardShadow),
     },
     field: { marginBottom: 12 },
     label: { fontSize: 13, color: theme.colors.textMuted, marginBottom: 6 },
@@ -355,6 +398,8 @@ const getStyles = (theme: any) =>
       paddingVertical: 10,
       borderRadius: 12,
       color: theme.colors.text,
+      minHeight: 48,
+      fontSize: 15,
     },
     pickerContainer: {
       backgroundColor: theme.colors.card,
@@ -374,7 +419,8 @@ const getStyles = (theme: any) =>
       shadowOpacity: 0.08,
       shadowRadius: 6,
       elevation: 2,
-      width: "80%",
+      width: "100%",
+      maxWidth: 360,
     },
     buttonText: { color: "#fff", fontWeight: "700", textAlign: "center" },
   });

@@ -1,615 +1,398 @@
-// import React from "react";
-// import {
-//   View,
-//   Text,
-//   ActivityIndicator,
-//   Dimensions,
-//   StyleSheet,
-//   ScrollView,
-// } from "react-native";
-// import { BarChart, PieChart } from "react-native-chart-kit";
-// import { useStats } from "../hooks/useStats";
-// import { useTheme } from "../context/ThemeContext";
-// import { SafeAreaView } from "react-native-safe-area-context";
-// import { HeaderMenu } from "../components/HeaderMenu";
-
-
-// const screenWidth = Dimensions.get("window").width - 32;
-
-
-// export const DashboardScreen = () => {
-//   const { theme } = useTheme();
-//   const { stats, loading, error } = useStats();
-//   const screenHeight = Dimensions.get("window").height;
-
-//   const styles = getStyles(theme);
-
-//   if (loading)
-//     return (
-//       <View style={styles.loaderContainer}>
-//         <ActivityIndicator size="large" color={theme.colors.primary} />
-//       </View>
-//     );
-
-//   if (error)
-//     return (
-//       <View style={styles.loaderContainer}>
-//         <Text style={[styles.subtitle, { color: theme.colors.danger }]}>{error}</Text>
-//       </View>
-//     );
-
-//   if (!stats)
-//     return (
-//       <View style={styles.loaderContainer}>
-//         <Text style={styles.subtitle}>No hay datos disponibles</Text>
-//       </View>
-//     );
-
-//   // 🔹 Preparamos los datos para las gráficas
-//   const categorias = Object.entries(stats.porCategoria).map(([key, value], i) => ({
-//     name: key,
-//     population: value,
-//     color: [
-//       theme.colors.primary,
-//       "#4CAF50",
-//       "#FFC107",
-//       "#00897B",
-//       "#5E35B1",
-
-//     ][i % 5],
-//     legendFontColor: theme.colors.text,
-//     legendFontSize: 13,
-//   }));
-
-//   const chartConfig = {
-//     backgroundGradientFrom: theme.colors.card,
-//     backgroundGradientTo: theme.colors.card,
-//     decimalPlaces: 0,
-//     color: (opacity = 1) =>
-//       `${theme.colors.primary}${Math.floor(opacity * 255).toString(16)}`,
-//     labelColor: () => theme.colors.text,
-//   };
-
-//   return (
-    
-//     <SafeAreaView style={{...styles.safeArea, height: screenHeight}}>
-//       <ScrollView
-//         style={{height: screenHeight}}
-//         showsVerticalScrollIndicator={false}
-//         contentContainerStyle={{ paddingBottom: 40 }}
-//       >
-//         <HeaderMenu/>
-//         {/* 🩺 Encabezado */}
-//         <Text style={styles.title}>Panel de Control</Text>
-//         <Text style={styles.subtitle}>
-//           Bienvenido a tu panel de control de PharmaControl
-//         </Text>
-
-//         {/* 🔹 Tarjetas resumen */}
-//         <View style={styles.cardsRow}>
-//           <View
-//             style={[
-//               styles.card,
-//               { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
-//             ]}
-//           >
-//             <Text style={styles.cardTitle}>Medicamentos Totales</Text>
-//             <Text style={[styles.cardValue, { color: theme.colors.primary }]}>
-//               {stats.total}
-//             </Text>
-//           </View>
-
-//           <View
-//             style={[
-//               styles.card,
-//               { backgroundColor: theme.colors.card, borderColor: theme.colors.border },
-//             ]}
-//           >
-//             <Text style={styles.cardTitle}>Por Caducar</Text>
-//             <Text style={[styles.cardValue, { color: theme.colors.warning }]}>
-//               {stats.porCaducar}
-//             </Text>
-//           </View>
-
-//           <View
-//             style={[
-//               styles.card,
-//               { backgroundColor:theme.colors.card, borderColor: theme.colors.border },
-//             ]}
-//           >
-//             <Text style={styles.cardTitle}>Caducados</Text>
-//             <Text style={[styles.cardValue, { color: "#D32F2F" }]}>
-//               {stats.caducados}
-//             </Text>
-//           </View>
-//         </View>
-
-//         {/* 📊 Gráfica de pastel */}
-//         <View style={[styles.chartContainer, { backgroundColor: theme.colors.card }]}>
-//           <Text style={styles.sectionTitle}>Distribución por Categoría</Text>
-//           <PieChart
-//             data={categorias}
-//             width={screenWidth * 0.9}
-//             height={220}
-//             accessor={"population"}
-//             backgroundColor={"transparent"}
-//             paddingLeft={"15"}
-//             hasLegend={false}
-//             chartConfig={chartConfig}
-//             center={[0, 0]}
-//             absolute
-//           />
-//           <View style={styles.legendContainer}>
-//             {categorias.map((item, i) => (
-//               <View key={i} style={styles.legendItem}>
-//                 <View
-//                   style={[styles.legendColor, { backgroundColor: item.color }]}
-//                 />
-//                 <Text style={[styles.legendText, { color: theme.colors.text }]}>
-//                   {item.population} {item.name}
-//                 </Text>
-//               </View>
-//             ))}
-//           </View>
-//         </View>
-
-//         {/* 📈 Gráfica de barras */}
-//         <View style={[styles.chartContainer, { backgroundColor: theme.colors.card }]}>
-//           <Text style={styles.sectionTitle}>Resumen General</Text>
-//           <BarChart
-//             data={{
-//               labels: ["Total", "Por Caducar", "Caducados"],
-//               datasets: [
-//                 { data: [stats.total, stats.porCaducar, stats.caducados] },
-//               ],
-//             }}
-//             width={screenWidth}
-//             height={220}
-//             yAxisLabel=""
-//             yAxisSuffix=""
-//             chartConfig={chartConfig}
-//             style={styles.barChart}
-//           />
-//         </View>
-//       </ScrollView>
-//     </SafeAreaView>
-//   );
-// };
-
-// // 🎨 Estilos dinámicos basados en el tema actual
-// const getStyles = (theme: any) =>
-//   StyleSheet.create({
-//     safeArea: {
-//       flex: 1,
-//       backgroundColor: theme.colors.background,
-
-//     },
-//     scrollContainer: {
-//       flex: 1,
-//       paddingHorizontal: 16,
-
-//     },
-//     loaderContainer: {
-//       flex: 1,
-//       justifyContent: "center",
-//       alignItems: "center",
-//       backgroundColor: theme.colors.background,
-//     },
-//     title: {
-//       fontSize: 26,
-//       fontWeight: "800",
-//       color: theme.colors.primary,
-//       marginBottom: 4,
-//       marginTop: 10,
-//       textAlign: "center",
-//     },
-//     subtitle: {
-//       fontSize: 15,
-//       color: theme.colors.text,
-//       marginBottom: 20,
-//       textAlign: "center",
-//     },
-//     cardsRow: {
-//       flexDirection: "row",
-//       justifyContent: "space-between",
-//       marginBottom: 20,
-//     },
-//     card: {
-//       flex: 1,
-//       borderRadius: 18,
-//       borderWidth: 1,
-//       paddingVertical: 16,
-//       paddingHorizontal: 10,
-//       marginHorizontal: 4,
-//       shadowColor: "#000",
-//       shadowOpacity: 0.08,
-//       shadowRadius: 6,
-//       elevation: 3,
-//       alignItems: "center",
-//       justifyContent: "center",
-//     },
-//     cardTitle: {
-//       fontSize: 14,
-//       color: theme.colors.text,
-//       textAlign: "center",
-//       marginBottom: 6,
-//     },
-//     cardValue: {
-//       fontSize: 28,
-//       fontWeight: "800",
-//     },
-//     chartContainer: {
-//       marginBottom: 24,
-//       borderRadius: 20,
-//       paddingVertical: 14,
-//       paddingHorizontal: 10,
-//       shadowColor: "#000",
-//       shadowOpacity: 0.05,
-//       shadowRadius: 6,
-//       elevation: 2,
-//       alignItems: "center",
-//     },
-//     legendContainer: {
-//       flexDirection: "row",
-//       flexWrap: "wrap",
-//       justifyContent: "center",
-//       marginTop: 10,
-//       gap: 8,
-//     },
-//     legendItem: {
-//       flexDirection: "row",
-//       alignItems: "center",
-//       marginHorizontal: 6,
-//       marginVertical: 4,
-//     },
-//     legendColor: {
-//       width: 14,
-//       height: 14,
-//       borderRadius: 4,
-//       marginRight: 6,
-//     },
-//     legendText: {
-//       fontSize: 14,
-//       fontWeight: "500",
-//     },
-//     sectionTitle: {
-//       fontSize: 18,
-//       fontWeight: "700",
-//       marginBottom: 10,
-//       color: theme.colors.text,
-//       textAlign: "center",
-//     },
-//     barChart: {
-//       borderRadius: 16,
-//       marginVertical: 8,
-//     },
-//   });
-import React from "react";
+import React, { useMemo } from "react";
 import {
-  View,
-  Text,
   ActivityIndicator,
-  Dimensions,
-  StyleSheet,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { BarChart, PieChart } from "react-native-chart-kit";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useStats } from "../hooks/useStats";
 import { useTheme } from "../context/ThemeContext";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { HeaderMenu } from "../components/HeaderMenu";
-
-const screenWidth = Dimensions.get("window").width - 32;
-
-/**
- * Paleta formal por defecto (fallback si theme no define colores)
- */
-const FORMAL = {
-  primary: "#1E3A8A",      // azul corporativo
-  border: "#E6EEF8",
-  bg: "#F8FAFC",
-  card: "#FFFFFF",
-  text: "#0F172A",
-  textMuted: "#475569",
-  warning: "#92400E",
-  danger: "#991B1B",
-  success: "#166534",
-};
+import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
+import { tw } from "../themes/tailwindTokens";
 
 function hexToRgba(hex: string, opacity = 1) {
-  try {
-    const c = hex.replace("#", "");
-    const bigint = parseInt(c, 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-  } catch {
-    return hex;
-  }
+  const normalized = hex.replace("#", "");
+  const value = parseInt(normalized.length === 3 ? normalized.repeat(2) : normalized, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
 export const DashboardScreen = () => {
   const { theme } = useTheme();
   const { stats, loading, error } = useStats();
-  const screenHeight = Dimensions.get("window").height;
+  const { width } = useWindowDimensions();
+  const layout = getLayout(width);
+  const styles = useMemo(() => getStyles(theme, layout.isPhone), [theme, layout.isPhone]);
+  const contentWidth = Math.min(layout.maxWidth, width) - layout.pagePadding * 2;
+  const chartWidth = Math.max(280, Math.min(contentWidth, layout.isDesktop ? 520 : contentWidth));
 
-  // resolved colors: prefer theme, fallback to FORMAL
-  const colors = {
-    primary: theme?.colors?.primary ?? FORMAL.primary,
-    border: theme?.colors?.border ?? FORMAL.border,
-    background: theme?.colors?.background ?? FORMAL.bg,
-    card: theme?.colors?.card ?? FORMAL.card,
-    text: theme?.colors?.text ?? FORMAL.text,
-    textMuted: theme?.colors?.textMuted ?? FORMAL.textMuted,
-    warning: theme?.colors?.warning ?? FORMAL.warning,
-    danger: theme?.colors?.danger ?? FORMAL.danger,
-    success: theme?.colors?.success ?? FORMAL.success,
-  };
-
-  const styles = getStyles(colors);
-
-  if (loading)
+  if (loading || error || !stats) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={styles.center}>
+        {loading ? (
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        ) : (
+          <Text style={[styles.subtitle, error && { color: theme.colors.danger }]}>
+            {error || "No hay datos disponibles"}
+          </Text>
+        )}
       </View>
     );
+  }
 
-  if (error)
-    return (
-      <View style={styles.loaderContainer}>
-        <Text style={[styles.subtitle, { color: colors.danger }]}>{error}</Text>
-      </View>
-    );
-
-  if (!stats)
-    return (
-      <View style={styles.loaderContainer}>
-        <Text style={styles.subtitle}>No hay datos disponibles</Text>
-      </View>
-    );
-
-  // datos para pastel
   const categorias = Object.entries(stats.porCategoria).map(([key, value], i) => ({
     name: key,
-    population: value,
-    color: [
-      colors.primary,
-      "#4CAF50",
-      "#FFC107",
-      "#00897B",
-      "#5E35B1",
-    ][i % 5],
+    population: Number(value),
+    color: [theme.colors.primary, theme.colors.success, theme.colors.warning, "#00897B", "#6D5BD0"][
+      i % 5
+    ],
   }));
 
   const chartConfig = {
-    backgroundGradientFrom: colors.card,
-    backgroundGradientTo: colors.card,
+    backgroundGradientFrom: theme.colors.card,
+    backgroundGradientTo: theme.colors.card,
     decimalPlaces: 0,
-    color: (opacity = 1) => hexToRgba(colors.primary, opacity),
-    labelColor: () => colors.text,
+    color: (opacity = 1) => hexToRgba(theme.colors.primary, opacity),
+    labelColor: () => theme.colors.text,
+    propsForLabels: { fontSize: 12 },
   };
+  const healthy = Math.max(0, stats.total - stats.porCaducar - stats.caducados);
+  const healthyPercent = stats.total > 0 ? Math.round((healthy / stats.total) * 100) : 0;
+  const riskPercent = stats.total > 0 ? Math.round(((stats.porCaducar + stats.caducados) / stats.total) * 100) : 0;
 
   return (
-    <SafeAreaView key="dashboard-screen" style={{ ...styles.safeArea, height: screenHeight }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={80}
+    <SafeAreaView style={styles.safeArea}>
+      <HeaderMenu />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          webMaxWidthStyle(width),
+          { paddingHorizontal: layout.pagePadding, paddingBottom: 36 },
+        ]}
       >
-        <ScrollView
-          style={{ height: screenHeight }}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
-        >
-          <HeaderMenu />
-
-          {/* Header */}
-          <View style={styles.headerWrap}>
-            <Text style={styles.title}>Panel de Control</Text>
-            <Text style={styles.subtitle}>Información consolidada del inventario y alertas</Text>
+        <View style={styles.hero}>
+          <View>
+            <Text style={styles.eyebrow}>Resumen operativo</Text>
+            <Text style={styles.title}>Panel de control</Text>
+            <Text style={styles.subtitle}>Inventario, alertas y distribucion de medicamentos.</Text>
           </View>
-
-          {/* Cards */}
-          <View style={styles.cardsRow}>
-            <StatCard label="Medicamentos Totales" value={stats.total} color={colors.primary} styles={styles} />
-            <StatCard label="Por Caducar" value={stats.porCaducar} color={colors.warning} styles={styles} />
-            <StatCard label="Caducados" value={stats.caducados} color={colors.danger} styles={styles} />
+          <View style={styles.healthPill}>
+            <Text style={styles.healthValue}>{healthyPercent}%</Text>
+            <Text style={styles.healthLabel}>inventario sano</Text>
           </View>
+        </View>
 
-          {/* Pie */}
-          <View style={[styles.chartContainer, { backgroundColor: colors.card }]}>
-            <Text style={styles.sectionTitle}>Distribución por Categoría</Text>
+        <View style={[styles.cardsGrid, { gap: layout.gap }]}>
+          <StatCard title="Medicamentos" value={stats.total} color={theme.colors.primary} />
+          <StatCard title="Por caducar" value={stats.porCaducar} color={theme.colors.warning} />
+          <StatCard title="Caducados" value={stats.caducados} color={theme.colors.danger} />
+        </View>
+
+        <View style={[styles.insightsGrid, { gap: layout.gap }]}>
+          <InsightCard
+            label="Inventario sano"
+            value={`${healthy} unidades`}
+            tone="success"
+            percent={healthyPercent}
+          />
+          <InsightCard
+            label="Riesgo operativo"
+            value={`${riskPercent}% requiere atencion`}
+            tone={riskPercent > 30 ? "danger" : "warning"}
+            percent={riskPercent}
+          />
+        </View>
+
+        <View style={[styles.chartsGrid, { gap: layout.gap }]}>
+          <View style={styles.chartCard}>
+            <Text style={styles.sectionTitle}>Distribucion por categoria</Text>
             <PieChart
               data={categorias}
-              width={screenWidth * 0.9}
+              width={chartWidth}
               height={220}
-              accessor={"population"}
-              backgroundColor={"transparent"}
-              paddingLeft={"15"}
+              accessor="population"
+              backgroundColor="transparent"
+              paddingLeft="14"
               hasLegend={false}
               chartConfig={chartConfig}
-              center={[0, 0]}
               absolute
             />
             <View style={styles.legendContainer}>
-              {categorias.map((item, i) => (
-                <View key={`legend-${i}`} style={styles.legendItem}>
+              {categorias.map((item) => (
+                <View key={item.name} style={styles.legendItem}>
                   <View style={[styles.legendColor, { backgroundColor: item.color }]} />
-                  <Text style={[styles.legendText, { color: colors.text }]}>
-                    <Text style={styles.legendNumber}>{item.population}</Text> {item.name}
+                  <Text style={styles.legendText}>
+                    {item.population} {item.name}
                   </Text>
                 </View>
               ))}
             </View>
           </View>
 
-          {/* Bar */}
-          <View style={[styles.chartContainer, { backgroundColor: colors.card }]}>
-            <Text style={styles.sectionTitle}>Resumen General</Text>
+          <View style={styles.chartCard}>
+            <Text style={styles.sectionTitle}>Resumen general</Text>
             <BarChart
               data={{
-                labels: ["Total", "Por Caducar", "Caducados"],
+                labels: ["Total", "Por caducar", "Caducados"],
                 datasets: [{ data: [stats.total, stats.porCaducar, stats.caducados] }],
               }}
-              width={screenWidth}
+              width={chartWidth}
               height={240}
               yAxisLabel=""
               yAxisSuffix=""
-              chartConfig={{
-                ...chartConfig,
-                propsForLabels: { fontSize: 12 },
-              }}
+              chartConfig={chartConfig}
               style={styles.barChart}
               fromZero
             />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
-/* small reusable stat card */
-const StatCard = ({ label, value, color, styles }: any) => (
-  <View style={[styles.card, { marginHorizontal: 6 }]}>
-    <Text style={styles.cardTitle}>{label}</Text>
-    <Text style={[styles.cardValue, { color }]}>{value}</Text>
-  </View>
-);
+const StatCard = ({ title, value, color }: { title: string; value: number; color: string }) => {
+  const { theme } = useTheme();
+  const styles = getStyles(theme, false);
 
-const getStyles = (colors: any) =>
+  return (
+    <View style={styles.statCard}>
+      <Text style={styles.statLabel}>{title}</Text>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
+    </View>
+  );
+};
+
+const InsightCard = ({
+  label,
+  value,
+  tone,
+  percent,
+}: {
+  label: string;
+  value: string;
+  tone: "success" | "warning" | "danger";
+  percent: number;
+}) => {
+  const { theme } = useTheme();
+  const styles = getStyles(theme, false);
+  const color =
+    tone === "success" ? tw.colors.emerald600 : tone === "warning" ? tw.colors.amber600 : tw.colors.rose600;
+
+  return (
+    <View style={styles.insightCard}>
+      <View style={styles.insightHeader}>
+        <Text style={styles.insightLabel}>{label}</Text>
+        <Text style={[styles.insightPercent, { color }]}>{percent}%</Text>
+      </View>
+      <Text style={styles.insightValue}>{value}</Text>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${Math.min(100, percent)}%`, backgroundColor: color }]} />
+      </View>
+    </View>
+  );
+};
+
+const getStyles = (theme: any, isPhone: boolean) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,
-      backgroundColor: colors.background,
+      backgroundColor: theme.colors.background,
     },
-    headerWrap: {
-      paddingHorizontal: 20,
-      paddingTop: 12,
-      paddingBottom: 8,
-      alignItems: "center",
-    },
-    loaderContainer: {
+    center: {
       flex: 1,
-      justifyContent: "center",
       alignItems: "center",
-      backgroundColor: colors.background,
+      justifyContent: "center",
+      backgroundColor: theme.colors.background,
+      padding: 20,
     },
-    title: {
-      fontSize: 28,
-      fontWeight: "800",
-      color: colors.primary,
-      marginBottom: 6,
-      textAlign: "center",
-      letterSpacing: 0.2,
-      lineHeight: 34,
-      fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
+    content: {
+      width: "100%",
+      alignSelf: "center",
+      paddingTop: 18,
     },
-    subtitle: {
-      fontSize: 14,
-      color: colors.textMuted,
-      textAlign: "center",
-      lineHeight: 20,
-      marginBottom: 14,
-      fontFamily: Platform.OS === "ios" ? "System" : "Roboto",
-    },
-    cardsRow: {
-      flexDirection: "row",
+    hero: {
+      flexDirection: isPhone ? "column" : "row",
       justifyContent: "space-between",
-      marginHorizontal: 12,
+      alignItems: isPhone ? "stretch" : "center",
+      gap: 14,
       marginBottom: 18,
     },
-    card: {
-      flex: 1,
-      borderRadius: 12,
-      borderWidth: 1,
-      paddingVertical: 16,
-      paddingHorizontal: 14,
-      marginHorizontal: 6,
-      shadowColor: "#000",
-      shadowOpacity: 0.03,
-      shadowRadius: 8,
-      elevation: 4,
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 92,
-      backgroundColor: colors.card,
-      borderColor: colors.border,
-    },
-    cardTitle: {
-      fontSize: 13,
-      color: colors.text,
-      textAlign: "center",
-      marginBottom: 6,
-      fontWeight: "600",
-    },
-    cardValue: {
-      fontSize: 28,
+    eyebrow: {
+      color: theme.colors.primary,
+      fontSize: 12,
       fontWeight: "800",
-      letterSpacing: 0.3,
+      textTransform: "uppercase",
+      marginBottom: 5,
+      textAlign: isPhone ? "left" : "center",
     },
-    chartContainer: {
-      marginHorizontal: 16,
-      marginBottom: 22,
-      borderRadius: 14,
-      paddingVertical: 16,
-      paddingHorizontal: 12,
-      shadowColor: "#000",
-      shadowOpacity: 0.02,
-      shadowRadius: 8,
-      elevation: 3,
-      alignItems: "center",
+    title: {
+      color: theme.colors.text,
+      fontSize: isPhone ? 28 : 34,
+      fontWeight: "800",
+      textAlign: isPhone ? "left" : "center",
+    },
+    healthPill: {
+      minWidth: 156,
+      borderRadius: tw.radius.lg,
       borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.card,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.card,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      alignItems: "center",
+      ...shadow(theme.colors.cardShadow),
+    },
+    healthValue: {
+      color: theme.colors.primary,
+      fontSize: 26,
+      fontWeight: "800",
+    },
+    healthLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      fontWeight: "700",
+      marginTop: 2,
+    },
+    subtitle: {
+      color: theme.colors.textMuted,
+      fontSize: 15,
+      lineHeight: 21,
+      marginTop: 6,
+      textAlign: isPhone ? "left" : "center",
+    },
+    cardsGrid: {
+      flexDirection: isPhone ? "column" : "row",
+      marginBottom: 18,
+    },
+    statCard: {
+      flex: 1,
+      minHeight: 102,
+      backgroundColor: theme.colors.card,
+      borderRadius: tw.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: 16,
+      justifyContent: "center",
+      ...shadow(theme.colors.cardShadow),
+    },
+    insightsGrid: {
+      flexDirection: isPhone ? "column" : "row",
+      marginBottom: 18,
+    },
+    insightCard: {
+      flex: 1,
+      backgroundColor: theme.colors.card,
+      borderRadius: tw.radius.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: 16,
+      ...shadow(theme.colors.cardShadow),
+    },
+    insightHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 10,
+    },
+    insightLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 13,
+      fontWeight: "800",
+    },
+    insightPercent: {
+      fontSize: 18,
+      fontWeight: "800",
+    },
+    insightValue: {
+      color: theme.colors.text,
+      fontSize: 16,
+      fontWeight: "700",
+      marginTop: 8,
+    },
+    progressTrack: {
+      height: 8,
+      borderRadius: 999,
+      backgroundColor: theme.colors.background,
+      overflow: "hidden",
+      marginTop: 14,
+    },
+    progressFill: {
+      height: "100%",
+      borderRadius: 999,
+    },
+    statLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 13,
+      fontWeight: "700",
+      textTransform: "uppercase",
+    },
+    statValue: {
+      fontSize: 34,
+      fontWeight: "800",
+      marginTop: 8,
+    },
+    chartsGrid: {
+      flexDirection: isPhone ? "column" : "row",
+      alignItems: "stretch",
+    },
+    chartCard: {
+      flex: 1,
+      minWidth: 0,
+      alignItems: "center",
+      backgroundColor: theme.colors.card,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      padding: isPhone ? 12 : 16,
+      overflow: "hidden",
+      ...shadow(theme.colors.cardShadow),
     },
     sectionTitle: {
-      fontSize: 18,
-      fontWeight: "700",
+      color: theme.colors.text,
+      fontSize: 17,
+      fontWeight: "800",
       marginBottom: 10,
-      color: colors.text,
       textAlign: "center",
     },
     legendContainer: {
       flexDirection: "row",
       flexWrap: "wrap",
       justifyContent: "center",
-      marginTop: 12,
-      gap: 10,
+      gap: 8,
+      marginTop: 10,
     },
     legendItem: {
       flexDirection: "row",
       alignItems: "center",
-      marginHorizontal: 6,
-      marginVertical: 6,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       paddingHorizontal: 10,
       paddingVertical: 6,
-      borderRadius: 14,
-      backgroundColor: colors.background === "#fff" ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.01)",
     },
     legendColor: {
-      width: 14,
-      height: 14,
-      borderRadius: 4,
-      marginRight: 8,
+      width: 10,
+      height: 10,
+      borderRadius: 3,
+      marginRight: 7,
     },
     legendText: {
-      fontSize: 13,
+      color: theme.colors.text,
+      fontSize: 12,
       fontWeight: "600",
-      color: colors.text,
-    },
-    legendNumber: {
-      fontWeight: "700",
-      marginRight: 6,
-      color: colors.primary,
     },
     barChart: {
       borderRadius: 12,
-      marginVertical: 8,
+      marginVertical: 4,
     },
   });
 
