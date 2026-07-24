@@ -1,0 +1,19 @@
+
+> pharmacontrol@1.0.0 web
+> expo start --web
+
+Starting project at C:\Users\PROGRAMADORA\Desktop\appMovil
+Starting Metro Bundler
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+| [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+| [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+| [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+Web .\index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 91.1% ( 999/1067)
+Web .\index.ts ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 91.1% (1154/1250)
+Web .\index.ts ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web Bundled 10327ms index.ts (1406 modules)
+Web Bundled 5103ms index.ts (1 module)
+ LOG  [web] Logs will appear in the browser console
+ LOG  [web] Logs will appear in the browser console
