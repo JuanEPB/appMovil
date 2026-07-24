@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -158,7 +159,7 @@ export const MedicamentosScreen = () => {
         <View style={[styles.grid, { gap: layout.gap }]}>
           {medicamentosPagina.map((med: any, index: number) => (
             <Fade key={med?.id ?? index} delay={120 + index * 25}>
-              <MedicineCard med={med} />
+              <MedicineCard med={med} onRefresh={fetchMedicamentos} />
             </Fade>
           ))}
         </View>
@@ -193,8 +194,9 @@ export const MedicamentosScreen = () => {
   );
 };
 
-const MedicineCard = ({ med }: { med: any }) => {
+const MedicineCard = ({ med, onRefresh }: { med: any; onRefresh: () => void }) => {
   const { theme } = useTheme();
+  const navigation = useNavigation<any>();
   const styles = getStyles(theme, false, 1);
   const status =
     Number(med.stock) === 0
@@ -216,10 +218,58 @@ const MedicineCard = ({ med }: { med: any }) => {
       <View style={styles.metaGrid}>
         <Meta label="Lote" value={med.lote || "-"} />
         <Meta label="Stock" value={String(med.stock ?? "-")} />
+        <Meta label="Precio" value={`$${Number(med.precio || 0).toFixed(2)}`} />
         <Meta
           label="Caducidad"
           value={med.caducidad ? new Date(med.caducidad).toLocaleDateString() : "-"}
         />
+      </View>
+      <View style={styles.cardActions}>
+        <TouchableOpacity
+          style={styles.smallAction}
+          onPress={() => navigation.navigate("FormMedicament" as never, { medicamento: med } as never)}
+        >
+          <Feather name="edit-3" size={15} color={theme.colors.primary} />
+          <Text style={styles.smallActionText}>Editar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.smallAction}
+          onPress={async () => {
+            await localDb.adjustStock(med.id, 1);
+            onRefresh();
+          }}
+        >
+          <Feather name="plus" size={15} color={theme.colors.primary} />
+          <Text style={styles.smallActionText}>Stock</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.smallAction}
+          onPress={async () => {
+            await localDb.adjustStock(med.id, -1);
+            onRefresh();
+          }}
+        >
+          <Feather name="minus" size={15} color={theme.colors.warning} />
+          <Text style={styles.smallActionText}>Stock</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.dangerAction}
+          onPress={() =>
+            Alert.alert("Eliminar medicamento", `Quieres eliminar ${med.nombre}?`, [
+              { text: "Cancelar", style: "cancel" },
+              {
+                text: "Eliminar",
+                style: "destructive",
+                onPress: async () => {
+                  await localDb.deleteMedicamento(med.id);
+                  onRefresh();
+                },
+              },
+            ])
+          }
+        >
+          <Feather name="trash-2" size={15} color={theme.colors.danger} />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -359,6 +409,38 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
       flexWrap: "wrap",
       justifyContent: "space-between",
       gap: 12,
+    },
+    cardActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 16,
+      paddingTop: 12,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+    },
+    smallAction: {
+      flex: 1,
+      minHeight: 36,
+      borderRadius: 10,
+      backgroundColor: theme.colors.background,
+      alignItems: "center",
+      justifyContent: "center",
+      flexDirection: "row",
+      gap: 6,
+    },
+    smallActionText: {
+      color: theme.colors.text,
+      fontSize: 12,
+      fontWeight: "800",
+    },
+    dangerAction: {
+      width: 38,
+      height: 36,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.background,
     },
     emptyState: {
       alignItems: "center",

@@ -10,7 +10,7 @@ import {
   ScrollView,
   useWindowDimensions,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiPharma } from "../api/apiPharma";
 import { useTheme } from "../context/ThemeContext";
@@ -28,20 +28,22 @@ import { isDemoToken, localDb } from "../data/localDb";
 export const FormMedicament = () => {
   const { theme } = useTheme();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const editing = route.params?.medicamento;
   const { width } = useWindowDimensions();
   const layout = getLayout(width);
   const styles = useMemo(() => getStyles(theme, layout.isPhone), [theme, layout.isPhone]);
 
   // Estados
-  const [nombre, setNombre] = useState("");
-  const [lote, setLote] = useState("");
-  const [stock, setStock] = useState("");
-  const [caducidad, setCaducidad] = useState("");
+  const [nombre, setNombre] = useState(editing?.nombre || "");
+  const [lote, setLote] = useState(editing?.lote || "");
+  const [stock, setStock] = useState(editing?.stock !== undefined ? String(editing.stock) : "");
+  const [caducidad, setCaducidad] = useState(editing?.caducidad || "");
 
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
-  const [categoriaId, setCategoriaId] = useState<number | null>(null);
-  const [proveedorId, setProveedorId] = useState<number | null>(null);
+  const [categoriaId, setCategoriaId] = useState<number | null>(editing?.categoria?.id || null);
+  const [proveedorId, setProveedorId] = useState<number | null>(editing?.proveedor?.id || null);
 
   const [saving, setSaving] = useState(false);
   const [ok, setOk] = useState(false);
@@ -83,23 +85,6 @@ export const FormMedicament = () => {
       setSaving(true);
       const token = await AsyncStorage.getItem("token");
       if (!token) throw new Error("No token");
-      if (isDemoToken(token)) {
-        await localDb.createMedicamento({
-          nombre,
-          lote,
-          stock: Number(stock || 0),
-          caducidad,
-          categoriaId,
-          proveedorId,
-        });
-        setOk(true);
-        setTimeout(() => {
-          setOk(false);
-          navigation.navigate("Medicamentos" as never);
-        }, 900);
-        return;
-      }
-
       const payload = {
         nombre,
         lote,
@@ -108,10 +93,26 @@ export const FormMedicament = () => {
         categoriaId,
         proveedorId,
       };
+      if (isDemoToken(token)) {
+        if (editing?.id) await localDb.updateMedicamento(editing.id, payload);
+        else await localDb.createMedicamento(payload);
+        setOk(true);
+        setTimeout(() => {
+          setOk(false);
+          navigation.navigate("Medicamentos" as never);
+        }, 900);
+        return;
+      }
 
-      await apiPharma.post("/api/medicamentos/create", payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (editing?.id) {
+        await apiPharma.put(`/api/medicamentos/update/${editing.id}`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        await apiPharma.post("/api/medicamentos/create", payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
 
       setOk(true);
       setTimeout(() => {
@@ -148,8 +149,10 @@ export const FormMedicament = () => {
               >
                 <Feather name="arrow-left" size={22} color="#fff" />
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>Agregar medicamento</Text>
-              <Text style={styles.headerSubtitle}>Registra lote, stock y caducidad.</Text>
+              <Text style={styles.headerTitle}>{editing ? "Editar medicamento" : "Agregar medicamento"}</Text>
+              <Text style={styles.headerSubtitle}>
+                {editing ? "Actualiza datos, precio y stock." : "Registra lote, stock y caducidad."}
+              </Text>
             </LinearGradient>
           </Fade>
 
@@ -307,7 +310,7 @@ export const FormMedicament = () => {
               ]}
             >
               <Text style={styles.buttonText}>
-                {saving ? "Guardando..." : "Guardar"}
+                {saving ? "Guardando..." : editing ? "Actualizar" : "Guardar"}
               </Text>
             </TouchableOpacity>
           </Fade>

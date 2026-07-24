@@ -10,6 +10,7 @@ import { MedicamentosScreen } from "../screens/MedicamentosScreen";
 import { FormMedicament } from "../screens/FormMedicament";
 import { CalendarScreen } from "../screens/CalendarScreen";
 import { EditProfileScreen } from "../screens/EditProfileScreen";
+import { SalesScreen } from "../screens/SalesScreen";
 
 export type RootDrawerParamList = {
   Dashboard: undefined;
@@ -21,6 +22,7 @@ export type RootDrawerParamList = {
   FormMedicament: undefined;
   Calendar: undefined;
   EditUser: undefined;
+  Sales: undefined;
 };
 
 const Drawer = createDrawerNavigator<RootDrawerParamList>();
@@ -38,6 +40,7 @@ export const DrawerNavigator = () => {
     >
       <Drawer.Screen name="Dashboard" component={DashboardScreen} />
       <Drawer.Screen name="Documents" component={DocumentsScreen} />
+      <Drawer.Screen name="Sales" component={SalesScreen} />
       <Drawer.Screen
           name="Calendar"
           component={CalendarScreen}

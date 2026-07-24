@@ -96,6 +96,12 @@ export const DashboardScreen = () => {
           <StatCard title="Caducados" value={stats.caducados} color={theme.colors.danger} />
         </View>
 
+        <View style={[styles.cardsGrid, { gap: layout.gap }]}>
+          <StatCard title="Bajo stock" value={stats.bajoStock ?? 0} color={tw.colors.amber600} />
+          <StatCard title="Agotados" value={stats.agotados ?? 0} color={tw.colors.rose600} />
+          <ValueCard title="Valor inventario" value={stats.valorInventario ?? 0} />
+        </View>
+
         <View style={[styles.insightsGrid, { gap: layout.gap }]}>
           <InsightCard
             label="Inventario sano"
@@ -167,6 +173,17 @@ const StatCard = ({ title, value, color }: { title: string; value: number; color
     <View style={styles.statCard}>
       <Text style={styles.statLabel}>{title}</Text>
       <Text style={[styles.statValue, { color }]}>{value}</Text>
+    </View>
+  );
+};
+
+const ValueCard = ({ title, value }: { title: string; value: number }) => {
+  const { theme } = useTheme();
+  const styles = getStyles(theme, false);
+  return (
+    <View style={styles.statCard}>
+      <Text style={styles.statLabel}>{title}</Text>
+      <Text style={[styles.statValue, { color: theme.colors.success }]}>${value.toFixed(2)}</Text>
     </View>
   );
 };

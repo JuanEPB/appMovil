@@ -12,6 +12,7 @@ import { shadow } from "../utils/responsive";
 const navItems = [
   { icon: "home-outline", label: "Inicio", route: "Dashboard", color: "#1D4ED8" },
   { icon: "medkit-outline", label: "Medicamentos", route: "Medicamentos", color: "#00897B" },
+  { icon: "cart-outline", label: "Ventas", route: "Sales", color: "#0EA5E9" },
   { icon: "document-text-outline", label: "Documentos", route: "Documents", color: "#6D5BD0" },
   { icon: "calendar-outline", label: "Calendario", route: "Calendar", color: "#C27803" },
   { icon: "chatbubbles-outline", label: "Chat IA", route: "Chat", color: "#DC2626" },
