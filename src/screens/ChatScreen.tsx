@@ -105,7 +105,10 @@ const getIntent = (data: any) =>
 
 const detectMedicineQuery = (message: string) => {
   const clean = message.trim();
-  const normalized = clean.toLowerCase();
+  const normalized = clean
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
   const triggers = [
     "medicamento",
     "medicina",
@@ -123,8 +126,20 @@ const detectMedicineQuery = (message: string) => {
 
   if (!triggers.some((trigger) => normalized.includes(trigger))) return "";
 
+  const directMatch = clean.match(
+    /\b(?:info|informacion|datos|recomendacion|recomendaciones)\s+(?:de|del|sobre)\s+(.+)$/i,
+  );
+  const directName = directMatch?.[1]
+    ?.replace(/\b(por favor|gracias)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (directName && directName.length >= 3) return directName;
+
   const cleanedName = clean
-    .replace(/^(busca|revisa|consulta|dime|quiero|necesito)\s+/i, "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/^(busca|revisa|consulta|dime|dame|quiero|necesito|muestrame|ensename)\s+/i, "")
     .replace(/\b(info|informacion|datos|recomendacion|recomendaciones)\b\s*(de|del|sobre)?/gi, "")
     .replace(/\b(medicamento|medicina|pastilla|tableta|capsula|capsulas|jarabe|inyeccion)\b/gi, "")
     .replace(/\b(para|con|el|la|un|una|por favor)\b/gi, "")
