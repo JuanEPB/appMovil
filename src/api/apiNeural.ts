@@ -58,6 +58,18 @@ export const sendNeuralChatMessage = async (
   return response.data;
 };
 
+export const sendVoiceTranscript = async (
+  transcripcion: string,
+  sesionId = "app-movil-voz",
+) => {
+  const response = await apiNeural.post("/voz/transcripcion", {
+    transcripcion,
+    sesion_id: sesionId,
+  });
+
+  return response.data;
+};
+
 export const getPredictiveDashboard = async (limite = 10) => {
   const response = await apiNeural.get("/dashboard/predictivo", {
     params: {

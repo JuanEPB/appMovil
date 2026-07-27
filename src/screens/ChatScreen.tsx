@@ -17,6 +17,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   sendLearningFeedback,
   sendNeuralChatMessage,
+  sendVoiceTranscript,
 } from "../api/apiNeural";
 import { HeaderMenu } from "../components/HeaderMenu";
 import { useTheme } from "../context/ThemeContext";
@@ -107,8 +108,10 @@ export const ChatScreen = () => {
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
   const [input, setInput] = useState("");
+  const [voiceInput, setVoiceInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [loading, setLoading] = useState(false);
+  const [voiceLoading, setVoiceLoading] = useState(false);
 
   const scrollToEnd = () => {
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
@@ -190,6 +193,49 @@ export const ChatScreen = () => {
     }
   };
 
+  const sendVoiceMessage = async () => {
+    const transcript = voiceInput.trim();
+    if (!transcript || loading || voiceLoading) return;
+
+    const userMessage: ChatMessage = {
+      id: `voice-user-${Date.now()}`,
+      role: "user",
+      content: `Voz: ${transcript}`,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setVoiceLoading(true);
+    setVoiceInput("");
+    scrollToEnd();
+
+    try {
+      const data = await sendVoiceTranscript(transcript, "app-movil-voz");
+      const assistantMessage: ChatMessage = {
+        id: `voice-ai-${Date.now()}`,
+        role: "ai",
+        content: data?.respuesta_texto || getAssistantText(data?.resultado || data),
+        sourceMessage: transcript,
+        intent: getIntent(data?.resultado || data),
+        options: getAssistantOptions(data?.resultado || data),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `voice-error-${Date.now()}`,
+          role: "ai",
+          content:
+            "No pude procesar la transcripcion de voz. Revisa la API Neural.",
+          sourceMessage: transcript,
+        },
+      ]);
+    } finally {
+      setVoiceLoading(false);
+      scrollToEnd();
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <HeaderMenu />
@@ -226,6 +272,43 @@ export const ChatScreen = () => {
                 <Text style={styles.quickText}>{prompt.text}</Text>
               </Pressable>
             ))}
+          </View>
+
+          <View style={styles.voicePanel}>
+            <View style={styles.voiceHeader}>
+              <View style={styles.voiceIcon}>
+                <Feather name="mic" size={16} color={theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.voiceTitle}>Modo voz</Text>
+                <Text style={styles.voiceHint}>Escribe la transcripcion y la IA la procesa como comando hablado.</Text>
+              </View>
+            </View>
+            <View style={styles.voiceInputRow}>
+              <TextInput
+                style={styles.voiceInput}
+                placeholder="Ej. revisa medicamentos con bajo stock"
+                placeholderTextColor={theme.colors.textMuted}
+                value={voiceInput}
+                onChangeText={setVoiceInput}
+                editable={!voiceLoading && !loading}
+              />
+              <Pressable
+                style={({ pressed }) => [
+                  styles.voiceButton,
+                  (!voiceInput.trim() || voiceLoading || loading) && styles.sendDisabled,
+                  pressed && styles.pressed,
+                ]}
+                disabled={!voiceInput.trim() || voiceLoading || loading}
+                onPress={sendVoiceMessage}
+              >
+                {voiceLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Feather name="radio" size={17} color="#fff" />
+                )}
+              </Pressable>
+            </View>
           </View>
 
           <FlatList
@@ -406,6 +489,64 @@ const getStyles = (theme: any, isPhone: boolean) =>
       color: theme.colors.primary,
       fontSize: 12,
       fontWeight: "700",
+    },
+    voicePanel: {
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.card,
+      padding: 12,
+      marginBottom: 10,
+      ...shadow(theme.colors.cardShadow),
+    },
+    voiceHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      marginBottom: 10,
+    },
+    voiceIcon: {
+      width: 34,
+      height: 34,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
+      backgroundColor: theme.colors.background,
+    },
+    voiceTitle: {
+      color: theme.colors.text,
+      fontSize: 14,
+      fontWeight: "800",
+    },
+    voiceHint: {
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      lineHeight: 17,
+      marginTop: 2,
+    },
+    voiceInputRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    voiceInput: {
+      flex: 1,
+      minHeight: 42,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.background,
+      color: theme.colors.text,
+      paddingHorizontal: 12,
+      fontSize: 14,
+    },
+    voiceButton: {
+      width: 44,
+      height: 42,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
+      backgroundColor: theme.colors.primary,
     },
     messages: {
       flexGrow: 1,
