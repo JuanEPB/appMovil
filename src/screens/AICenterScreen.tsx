@@ -86,6 +86,43 @@ const numberOf = (value: unknown, keys: string[]) => {
   return 0;
 };
 
+const getMedicineInfoItems = (medicineInfo: any | null) => {
+  if (!medicineInfo) return [];
+
+  const localMedicine = asRecord(medicineInfo.medicamento_local);
+  const items = [
+    ...(medicineInfo.informacion?.indicaciones || []),
+    ...(medicineInfo.informacion?.advertencias || []),
+    ...(medicineInfo.informacion?.no_usar_en || []),
+    ...(medicineInfo.recomendaciones_seguras || []),
+    ...(medicineInfo.errores || []),
+  ].filter(Boolean);
+
+  if (localMedicine.nombre) {
+    items.splice(
+      1,
+      0,
+      `Base local: ${textOf(localMedicine.nombre)} | Stock ${textOf(
+        localMedicine.stock,
+        "0",
+      )} | Precio $${Number(localMedicine.precio || 0).toFixed(2)}`,
+    );
+  }
+
+  if (localMedicine.lote || localMedicine.caducidad) {
+    items.splice(
+      localMedicine.nombre ? 2 : 1,
+      0,
+      `Lote ${textOf(localMedicine.lote, "sin lote")} | Caducidad ${textOf(
+        localMedicine.caducidad,
+        "sin fecha",
+      )}`,
+    );
+  }
+
+  return items;
+};
+
 export const AICenterScreen = ({ navigation }: { navigation: any }) => {
   const { theme } = useTheme();
   const { width } = useWindowDimensions();
@@ -192,6 +229,13 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
     } catch (requestError) {
       setMedicineInfo({
         consulta: query,
+        mensaje_usuario:
+          "No pude conectar con la API en este momento, pero la consulta quedo identificada.",
+        recomendaciones_seguras: [
+          "Revisa que la URL de API este correcta en Configuracion.",
+          "Verifica disponibilidad, lote, caducidad y precio desde inventario.",
+          "No uses esta consulta para diagnosticar, recetar o cambiar dosis.",
+        ],
         errores: [
           requestError instanceof Error
             ? requestError.message
@@ -383,14 +427,13 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
                     <Text style={styles.agentMode}>
                       {textOf(medicineInfo.normalizacion?.nombre_normalizado, medicineInfo.consulta)}
                     </Text>
+                    {medicineInfo.mensaje_usuario ? (
+                      <Text style={styles.medicineMessage}>{medicineInfo.mensaje_usuario}</Text>
+                    ) : null}
                     <Text style={styles.reportText}>{medicineInfo.aviso_medico}</Text>
                     <List
-                      items={[
-                        ...(medicineInfo.informacion?.indicaciones || []),
-                        ...(medicineInfo.informacion?.advertencias || []),
-                        ...(medicineInfo.errores || []),
-                      ]}
-                      empty="Sin informacion externa encontrada."
+                      items={getMedicineInfoItems(medicineInfo)}
+                      empty="Sin datos encontrados para mostrar."
                       styles={styles}
                     />
                   </View>
@@ -835,6 +878,13 @@ const getStyles = (theme: any, isPhone: boolean) =>
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.background,
       padding: 10,
+    },
+    medicineMessage: {
+      color: theme.colors.text,
+      fontSize: 13,
+      lineHeight: 19,
+      marginBottom: 8,
+      fontWeight: "600",
     },
     disabled: {
       opacity: 0.55,
