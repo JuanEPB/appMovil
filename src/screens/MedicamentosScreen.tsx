@@ -175,6 +175,7 @@ export const MedicamentosScreen = () => {
   const [pagina, setPagina] = useState(1);
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<InventoryFilter>("Todos");
+  const [dataSource, setDataSource] = useState<"api" | "local">("local");
 
   const itemsPorPagina = layout.isDesktop ? 9 : 6;
 
@@ -189,11 +190,13 @@ export const MedicamentosScreen = () => {
       }
 
       if (isDemoToken(token)) {
+        setDataSource("local");
         const data = await localDb.getMedicamentos();
         setMedicamentos(Array.isArray(data) ? data : []);
         return;
       }
 
+      setDataSource("api");
       const response = await apiPharma.get("/api/medicamentos/all", {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -393,7 +396,26 @@ export const MedicamentosScreen = () => {
               <Text style={styles.title}>Medicamentos</Text>
 
               <Text style={styles.subtitle}>
-                Administra existencias, lotes y fechas de caducidad.
+                {dataSource === "api"
+                  ? "Datos cargados desde la base de datos."
+                  : "Modo local/demo activo. Inicia sesion real para ver la base."}
+              </Text>
+            </View>
+
+            <View style={styles.sourcePill}>
+              <View
+                style={[
+                  styles.sourceDot,
+                  {
+                    backgroundColor:
+                      dataSource === "api"
+                        ? theme.colors.success
+                        : theme.colors.warning,
+                  },
+                ]}
+              />
+              <Text style={styles.sourceText}>
+                {dataSource === "api" ? "Base de datos" : "Local/demo"}
               </Text>
             </View>
 
@@ -1112,6 +1134,31 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
       fontSize: 14,
       lineHeight: 21,
       marginTop: 5,
+    },
+
+    sourcePill: {
+      minHeight: 34,
+      alignSelf: isPhone ? "flex-start" : "center",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      backgroundColor: theme.colors.card,
+    },
+
+    sourceDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 999,
+    },
+
+    sourceText: {
+      color: theme.colors.text,
+      fontSize: 12,
+      fontWeight: "800",
     },
 
     headerActions: {

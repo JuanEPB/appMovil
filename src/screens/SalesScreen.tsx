@@ -13,6 +13,7 @@ import { Feather } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HeaderMenu } from "../components/HeaderMenu";
 import { SuccessModal } from "../components/SuccessModal";
+import { apiPharma } from "../api/apiPharma";
 import { syncAppSale } from "../api/apiNeural";
 import { useTheme } from "../context/ThemeContext";
 import { isDemoToken, localDb } from "../data/localDb";
@@ -37,11 +38,29 @@ export const SalesScreen = () => {
   const [connectionMode, setConnectionMode] = useState<"local" | "api">("local");
 
   const load = async () => {
-    setLoading(true);
-    const token = await AsyncStorage.getItem("token");
-    setConnectionMode(isDemoToken(token) ? "local" : "api");
-    setMedicamentos(await localDb.getMedicamentos());
-    setLoading(false);
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem("token");
+
+      if (!token || isDemoToken(token)) {
+        setConnectionMode("local");
+        setMedicamentos(await localDb.getMedicamentos());
+        return;
+      }
+
+      setConnectionMode("api");
+      const response = await apiPharma.get("/api/medicamentos/all", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setMedicamentos(Array.isArray(response.data) ? response.data : []);
+    } catch {
+      setConnectionMode("local");
+      setMedicamentos(await localDb.getMedicamentos());
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -110,11 +129,15 @@ export const SalesScreen = () => {
           <View>
             <Text style={styles.eyebrow}>Punto de venta</Text>
             <Text style={styles.title}>Registrar venta</Text>
-            <Text style={styles.subtitle}>Selecciona productos, calcula total y descuenta stock local.</Text>
+            <Text style={styles.subtitle}>
+              {connectionMode === "api"
+                ? "Selecciona productos cargados desde la base de datos."
+                : "Modo local activo: revisa la sesion o conexion API."}
+            </Text>
           </View>
           <View style={styles.modePill}>
             <View style={[styles.modeDot, { backgroundColor: connectionMode === "api" ? theme.colors.success : theme.colors.warning }]} />
-            <Text style={styles.modeText}>{connectionMode === "api" ? "API activa" : "Modo local"}</Text>
+            <Text style={styles.modeText}>{connectionMode === "api" ? "Base de datos" : "Modo local"}</Text>
           </View>
           <View style={styles.totalCard}>
             <Text style={styles.totalLabel}>Total</Text>
