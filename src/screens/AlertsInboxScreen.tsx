@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -37,6 +38,23 @@ const statusColor = (theme: any, status?: string) => {
   if (status === "CADUCADO" || status === "AGOTADO") return theme.colors.danger;
   if (status === "CRITICO" || status === "PRECAUCION") return theme.colors.warning;
   return theme.colors.primary;
+};
+
+const printReportOnWeb = (html: string) => {
+  const reportWindow = window.open("", "_blank", "width=900,height=1100");
+
+  if (!reportWindow) {
+    throw new Error("El navegador bloqueó la ventana del reporte.");
+  }
+
+  reportWindow.document.open();
+  reportWindow.document.write(html);
+  reportWindow.document.close();
+  reportWindow.focus();
+
+  reportWindow.onload = () => {
+    reportWindow.print();
+  };
 };
 
 export const AlertsInboxScreen = () => {
@@ -78,6 +96,11 @@ export const AlertsInboxScreen = () => {
 
       if (!html) {
         throw new Error("El reporte no devolvió contenido imprimible.");
+      }
+
+      if (Platform.OS === "web") {
+        printReportOnWeb(html);
+        return;
       }
 
       const file = await Print.printToFileAsync({
