@@ -99,6 +99,12 @@ export const DocumentsScreen = () => {
     try {
       setDownloading(venta._id);
       const url = getSaleTicketPdfUrl(backendVentaId);
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        await exportLocalTicket(venta);
+        return;
+      }
 
       await Linking.openURL(url);
 
