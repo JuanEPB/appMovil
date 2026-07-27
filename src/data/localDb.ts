@@ -126,6 +126,11 @@ const writeDb = async (db: LocalDb) => AsyncStorage.setItem(DB_KEY, JSON.stringi
 
 export const isDemoToken = (token?: string | null) => Boolean(token?.includes(".demo"));
 
+const getCategoriaNombre = (categoria: Medicamento["categoria"]) => {
+  if (!categoria) return "Sin categoria";
+  return typeof categoria === "string" ? categoria : categoria.nombre;
+};
+
 export const localDb = {
   async getMedicamentos() {
     return (await readDb()).medicamentos;
@@ -253,7 +258,7 @@ export const localDb = {
     }).length;
     const caducados = meds.filter((med) => new Date(med.caducidad) < today).length;
     const porCategoria = meds.reduce<Record<string, number>>((acc, med) => {
-      const name = med.categoria?.nombre ?? "Sin categoria";
+      const name = getCategoriaNombre(med.categoria);
       acc[name] = (acc[name] ?? 0) + 1;
       return acc;
     }, {});
