@@ -12,9 +12,11 @@ import { CalendarScreen } from "../screens/CalendarScreen";
 import { EditProfileScreen } from "../screens/EditProfileScreen";
 import { SalesScreen } from "../screens/SalesScreen";
 import { PredictiveDashboardScreen } from "../screens/PredictiveDashboardScreen";
+import { AICenterScreen } from "../screens/AICenterScreen";
 
 export type RootDrawerParamList = {
   Dashboard: undefined;
+  AICenter: undefined;
   PredictiveDashboard: undefined;
   Documents: undefined;
   Chat: undefined;
@@ -41,6 +43,7 @@ export const DrawerNavigator = () => {
       drawerContent={(props) => <Sidebar {...props} />}
     >
       <Drawer.Screen name="Dashboard" component={DashboardScreen} />
+      <Drawer.Screen name="AICenter" component={AICenterScreen} />
       <Drawer.Screen name="PredictiveDashboard" component={PredictiveDashboardScreen} />
       <Drawer.Screen name="Documents" component={DocumentsScreen} />
       <Drawer.Screen name="Sales" component={SalesScreen} />

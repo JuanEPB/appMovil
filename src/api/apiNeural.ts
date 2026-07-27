@@ -42,3 +42,35 @@ export const getExecutiveReport = async (limite = 5) => {
 
   return response.data;
 };
+
+export const getInventoryAnomalies = async (limite = 100) => {
+  const response = await apiNeural.get("/inventario/anomalias", {
+    params: {
+      limite,
+    },
+  });
+
+  return response.data;
+};
+
+export const getAutomaticRecommendations = async (limite = 10) => {
+  const response = await apiNeural.get("/recomendaciones", {
+    params: {
+      limite,
+    },
+  });
+
+  return response.data;
+};
+
+export const runAutonomousAgentCycle = async (
+  autorizarAcciones = false,
+  sesionId = "app-movil",
+) => {
+  const response = await apiNeural.post("/agente/autonomo/ciclo", {
+    autorizar_acciones: autorizarAcciones,
+    sesion_id: sesionId,
+  });
+
+  return response.data;
+};
