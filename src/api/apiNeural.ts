@@ -74,3 +74,30 @@ export const runAutonomousAgentCycle = async (
 
   return response.data;
 };
+
+export const sendLearningFeedback = async ({
+  mensaje,
+  respuesta,
+  util,
+  sesionId = "app-movil",
+  intencion,
+  correccion,
+}: {
+  mensaje: string;
+  respuesta: string;
+  util: boolean;
+  sesionId?: string;
+  intencion?: string;
+  correccion?: string;
+}) => {
+  const response = await apiNeural.post("/aprendizaje/feedback", {
+    mensaje,
+    respuesta,
+    util,
+    sesion_id: sesionId,
+    intencion,
+    correccion,
+  });
+
+  return response.data;
+};
