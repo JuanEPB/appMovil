@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 import * as Print from "expo-print";
-import * as Sharing from "expo-sharing";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
@@ -80,14 +79,9 @@ export const AlertsInboxScreen = () => {
         throw new Error("El reporte no devolvió contenido imprimible.");
       }
 
-      const file = await Print.printToFileAsync({ html });
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(file.uri, {
-          mimeType: "application/pdf",
-          dialogTitle: "Reporte de bajo stock",
-        });
-      }
+      await Print.printAsync({
+        html,
+      });
     } catch (requestError) {
       setError(
         requestError instanceof Error
