@@ -70,4 +70,8 @@ export interface VentaData {
   fecha: string;
   total: number;
   detalles: DetalleVenta[];
+  syncStatus?: "pendiente" | "sincronizada" | "error";
+  syncId?: string | number;
+  syncError?: string;
+  syncedAt?: string;
 }

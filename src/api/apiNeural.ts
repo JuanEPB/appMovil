@@ -27,6 +27,25 @@ export const checkNeuralApiStatus = async () => {
   return response.data;
 };
 
+export const syncAppSale = async (venta: unknown, farmacia: unknown) => {
+  const response = await apiNeural.post("/ventas/sincronizar", {
+    venta,
+    farmacia,
+  });
+
+  return response.data;
+};
+
+export const getSyncedAppSales = async (limite = 20) => {
+  const response = await apiNeural.get("/ventas/sincronizadas", {
+    params: {
+      limite,
+    },
+  });
+
+  return response.data;
+};
+
 export const sendNeuralChatMessage = async (
   mensaje: string,
   sesionId = "app-movil",

@@ -228,6 +228,7 @@ export const localDb = {
       fecha: new Date().toISOString(),
       total: detalles.reduce((sum, item) => sum + Number(item.total || 0), 0),
       detalles,
+      syncStatus: "pendiente",
     };
 
     db.ventas = [venta, ...db.ventas];
@@ -246,6 +247,32 @@ export const localDb = {
     ];
     await writeDb(db);
     return venta;
+  },
+  async markVentaSyncStatus(
+    ventaId: string,
+    status: NonNullable<VentaData["syncStatus"]>,
+    options: {
+      syncId?: string | number;
+      syncError?: string;
+    } = {},
+  ) {
+    const db = await readDb();
+    db.ventas = db.ventas.map((venta) =>
+      venta._id === ventaId
+        ? {
+            ...venta,
+            syncStatus: status,
+            syncId: options.syncId ?? venta.syncId,
+            syncError: options.syncError,
+            syncedAt: status === "sincronizada" ? new Date().toISOString() : venta.syncedAt,
+          }
+        : venta
+    );
+    await writeDb(db);
+  },
+  async getPendingSalesSync() {
+    const db = await readDb();
+    return db.ventas.filter((venta) => venta.syncStatus !== "sincronizada");
   },
   async getStats() {
     const meds = (await readDb()).medicamentos;

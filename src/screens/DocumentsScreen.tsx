@@ -24,10 +24,10 @@ import { HeaderMenu } from "../components/HeaderMenu";
 import { FadeSlideIn as Fade } from "../components/FadeSlideIn";
 import { SuccessModal } from "../components/SuccessModal";
 import { apiPharma } from "../api/apiPharma";
-import { getSaleTicketPdfUrlAsync } from "../api/apiNeural";
+import { getSaleTicketPdfUrlAsync, syncAppSale } from "../api/apiNeural";
 import { useTheme } from "../context/ThemeContext";
 import { useDocuments } from "../hooks/useDocumentosHook";
-import { isDemoToken } from "../data/localDb";
+import { isDemoToken, localDb } from "../data/localDb";
 import {
   ExportHistoryItem,
   PharmacyProfile,
@@ -66,6 +66,26 @@ export const DocumentsScreen = () => {
   ) => {
     await addExportHistoryItem(item);
     await refreshExportHistory();
+  };
+
+  const retrySyncSale = async (venta: any) => {
+    try {
+      setDownloading(venta._id);
+      const pharmacy = await getPharmacyProfile();
+      const syncResult = await syncAppSale(venta, pharmacy);
+      await localDb.markVentaSyncStatus(venta._id, "sincronizada", {
+        syncId: syncResult.sync_id,
+      });
+      setSuccessMessage("Venta sincronizada con Pharma Neural V2.");
+      setShowSuccess(true);
+    } catch (error) {
+      await localDb.markVentaSyncStatus(venta._id, "error", {
+        syncError: error instanceof Error ? error.message : "No se pudo sincronizar.",
+      });
+      Alert.alert("Sincronizacion pendiente", "No se pudo conectar con la API.");
+    } finally {
+      setDownloading(null);
+    }
   };
 
   const handleDownload = async (id: string, filename: string) => {
@@ -297,10 +317,10 @@ export const DocumentsScreen = () => {
               <DocumentCard
                 key={venta._id}
                 title={`Venta #${venta._id}`}
-                subtitle={`${new Date(venta.fecha).toLocaleDateString()} - Total $${Number(venta.total || 0).toFixed(2)}`}
+                subtitle={`${new Date(venta.fecha).toLocaleDateString()} - Total $${Number(venta.total || 0).toFixed(2)} - ${getSaleSyncLabel(venta)}`}
                 icon="receipt"
-                primaryLabel="Ver ticket"
-                onPrimary={() => setSelectedVenta(venta)}
+                primaryLabel={venta.syncStatus === "sincronizada" ? "Ver ticket" : "Sincronizar"}
+                onPrimary={() => venta.syncStatus === "sincronizada" ? setSelectedVenta(venta) : retrySyncSale(venta)}
                 secondaryLabel="Exportar"
                 onSecondary={() => handleExportVenta(venta)}
                 loading={downloading === venta._id}
@@ -510,6 +530,12 @@ const DocumentCard = ({ title, subtitle, icon, primaryLabel, secondaryLabel, onP
 const EmptyText = ({ text }: { text: string }) => {
   const { theme } = useTheme();
   return <Text style={[styles.empty, { color: theme.colors.textMuted }]}>{text}</Text>;
+};
+
+const getSaleSyncLabel = (venta: any) => {
+  if (venta.syncStatus === "sincronizada") return "Sincronizada";
+  if (venta.syncStatus === "error") return "Error sync";
+  return "Pendiente sync";
 };
 
 const ExportHistoryCard = ({ item }: { item: ExportHistoryItem }) => {

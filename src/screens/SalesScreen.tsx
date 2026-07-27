@@ -13,9 +13,11 @@ import { Feather } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HeaderMenu } from "../components/HeaderMenu";
 import { SuccessModal } from "../components/SuccessModal";
+import { syncAppSale } from "../api/apiNeural";
 import { useTheme } from "../context/ThemeContext";
 import { isDemoToken, localDb } from "../data/localDb";
 import { Medicamento } from "../interfaces/interface";
+import { getPharmacyProfile } from "../utils/appSettings";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
 import { tw } from "../themes/tailwindTokens";
 
@@ -31,11 +33,14 @@ export const SalesScreen = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [connectionMode, setConnectionMode] = useState<"local" | "api">("local");
 
   const load = async () => {
     setLoading(true);
     const token = await AsyncStorage.getItem("token");
-    if (isDemoToken(token)) setMedicamentos(await localDb.getMedicamentos());
+    setConnectionMode(isDemoToken(token) ? "local" : "api");
+    setMedicamentos(await localDb.getMedicamentos());
     setLoading(false);
   };
 
@@ -58,10 +63,27 @@ export const SalesScreen = () => {
   const submit = async () => {
     if (!items.length) return;
     setSaving(true);
-    await localDb.createVenta(items.map((med) => ({ medicamentoId: med.id, cantidad: cart[med.id] })));
+    const venta = await localDb.createVenta(items.map((med) => ({ medicamentoId: med.id, cantidad: cart[med.id] })));
+    const pharmacy = await getPharmacyProfile();
+    let message = "El stock se actualizo y el ticket quedo disponible en documentos.";
+
+    try {
+      const syncResult = await syncAppSale(venta, pharmacy);
+      await localDb.markVentaSyncStatus(venta._id, "sincronizada", {
+        syncId: syncResult.sync_id,
+      });
+      message = "Venta registrada y sincronizada con Pharma Neural V2.";
+    } catch (error) {
+      await localDb.markVentaSyncStatus(venta._id, "pendiente", {
+        syncError: error instanceof Error ? error.message : "Sin conexion con API",
+      });
+      message = "Venta registrada localmente. Quedo pendiente de sincronizar.";
+    }
+
     setCart({});
     await load();
     setSaving(false);
+    setSuccessMessage(message);
     setSuccess(true);
   };
 
@@ -89,6 +111,10 @@ export const SalesScreen = () => {
             <Text style={styles.eyebrow}>Punto de venta</Text>
             <Text style={styles.title}>Registrar venta</Text>
             <Text style={styles.subtitle}>Selecciona productos, calcula total y descuenta stock local.</Text>
+          </View>
+          <View style={styles.modePill}>
+            <View style={[styles.modeDot, { backgroundColor: connectionMode === "api" ? theme.colors.success : theme.colors.warning }]} />
+            <Text style={styles.modeText}>{connectionMode === "api" ? "API activa" : "Modo local"}</Text>
           </View>
           <View style={styles.totalCard}>
             <Text style={styles.totalLabel}>Total</Text>
@@ -162,7 +188,7 @@ export const SalesScreen = () => {
       <SuccessModal
         visible={success}
         title="Venta registrada"
-        message="El stock se actualizo y el ticket quedo disponible en documentos."
+        message={successMessage}
         onRequestClose={() => setSuccess(false)}
       />
     </SafeAreaView>
@@ -179,6 +205,9 @@ const getStyles = (theme: any, isPhone: boolean) =>
     title: { color: theme.colors.text, fontSize: isPhone ? 28 : 34, fontWeight: "800", marginTop: 4 },
     subtitle: { color: theme.colors.textMuted, fontSize: 15, lineHeight: 21, marginTop: 5 },
     totalCard: { minWidth: 180, backgroundColor: theme.colors.card, borderColor: theme.colors.border, borderWidth: 1, borderRadius: 16, padding: 16, ...shadow(theme.colors.cardShadow) },
+    modePill: { minHeight: 34, alignSelf: isPhone ? "flex-start" : "center", flexDirection: "row", alignItems: "center", gap: 8, borderColor: theme.colors.border, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, backgroundColor: theme.colors.card },
+    modeDot: { width: 8, height: 8, borderRadius: 999 },
+    modeText: { color: theme.colors.text, fontSize: 12, fontWeight: "800" },
     totalLabel: { color: theme.colors.textMuted, fontWeight: "800", fontSize: 12, textTransform: "uppercase" },
     totalValue: { color: theme.colors.primary, fontSize: 30, fontWeight: "800", marginTop: 4 },
     grid: { flexDirection: isPhone ? "column" : "row", alignItems: "flex-start" },
