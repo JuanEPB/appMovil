@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
+  getMedicineSupportInfo,
   sendLearningFeedback,
   sendNeuralChatMessage,
   sendVoiceTranscript,
@@ -102,6 +103,60 @@ const getAssistantOptions = (data: any) => {
 const getIntent = (data: any) =>
   String(data?.contexto?.tipo || data?.contexto?.intencion || data?.intencion || "");
 
+const detectMedicineQuery = (message: string) => {
+  const clean = message.trim();
+  const normalized = clean.toLowerCase();
+  const triggers = [
+    "medicamento",
+    "medicina",
+    "pastilla",
+    "tableta",
+    "capsula",
+    "capsulas",
+    "jarabe",
+    "inyeccion",
+    "info de",
+    "informacion de",
+    "busca",
+    "revisa",
+  ];
+
+  if (!triggers.some((trigger) => normalized.includes(trigger))) return "";
+
+  const cleanedName = clean
+    .replace(/^(busca|revisa|consulta|dime|quiero|necesito)\s+/i, "")
+    .replace(/\b(info|informacion|datos|recomendacion|recomendaciones)\b\s*(de|del|sobre)?/gi, "")
+    .replace(/\b(medicamento|medicina|pastilla|tableta|capsula|capsulas|jarabe|inyeccion)\b/gi, "")
+    .replace(/\b(para|con|el|la|un|una|por favor)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return cleanedName.length >= 3 ? cleanedName : "";
+};
+
+const formatMedicineSupportText = (info: any) => {
+  const local = info?.medicamento_local || {};
+  const lines = [
+    info?.mensaje_usuario,
+    local?.nombre
+      ? `Base local: ${local.nombre} | stock ${local.stock ?? 0} | precio $${Number(
+          local.precio || 0,
+        ).toFixed(2)}`
+      : "",
+    local?.lote || local?.caducidad
+      ? `Lote ${local.lote || "sin lote"} | caducidad ${local.caducidad || "sin fecha"}`
+      : "",
+    ...(info?.informacion?.indicaciones || []),
+    ...(info?.informacion?.advertencias || []),
+    ...(info?.informacion?.no_usar_en || []),
+    ...(info?.recomendaciones_seguras || []),
+    info?.aviso_medico,
+    ...(info?.errores || []),
+  ].filter(Boolean);
+
+  return lines.join("\n\n");
+};
+
 export const ChatScreen = () => {
   const { theme } = useTheme();
   const { width } = useWindowDimensions();
@@ -137,14 +192,17 @@ export const ChatScreen = () => {
     scrollToEnd();
 
     try {
-      const data = await sendNeuralChatMessage(text, SESSION_ID);
+      const medicineName = detectMedicineQuery(text);
+      const data = medicineName
+        ? await getMedicineSupportInfo(medicineName)
+        : await sendNeuralChatMessage(text, SESSION_ID);
       const assistantMessage: ChatMessage = {
         id: `ai-${Date.now()}`,
         role: "ai",
-        content: getAssistantText(data),
+        content: medicineName ? formatMedicineSupportText(data) : getAssistantText(data),
         sourceMessage: text,
-        intent: getIntent(data),
-        options: getAssistantOptions(data),
+        intent: medicineName ? "consulta_medicamento" : getIntent(data),
+        options: medicineName ? [] : getAssistantOptions(data),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -213,14 +271,19 @@ export const ChatScreen = () => {
     scrollToEnd();
 
     try {
-      const data = await sendVoiceTranscript(transcript, "app-movil-voz");
+      const medicineName = detectMedicineQuery(transcript);
+      const data = medicineName
+        ? await getMedicineSupportInfo(medicineName)
+        : await sendVoiceTranscript(transcript, "app-movil-voz");
       const assistantMessage: ChatMessage = {
         id: `voice-ai-${Date.now()}`,
         role: "ai",
-        content: data?.respuesta_texto || getAssistantText(data?.resultado || data),
+        content: medicineName
+          ? formatMedicineSupportText(data)
+          : data?.respuesta_texto || getAssistantText(data?.resultado || data),
         sourceMessage: transcript,
-        intent: getIntent(data?.resultado || data),
-        options: getAssistantOptions(data?.resultado || data),
+        intent: medicineName ? "consulta_medicamento" : getIntent(data?.resultado || data),
+        options: medicineName ? [] : getAssistantOptions(data?.resultado || data),
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch {
@@ -340,14 +403,19 @@ export const ChatScreen = () => {
     scrollToEnd();
 
     try {
-      const data = await sendVoiceTranscript(cleanTranscript, "app-movil-voz");
+      const medicineName = detectMedicineQuery(cleanTranscript);
+      const data = medicineName
+        ? await getMedicineSupportInfo(medicineName)
+        : await sendVoiceTranscript(cleanTranscript, "app-movil-voz");
       const assistantMessage: ChatMessage = {
         id: `voice-ai-${Date.now()}`,
         role: "ai",
-        content: data?.respuesta_texto || getAssistantText(data?.resultado || data),
+        content: medicineName
+          ? formatMedicineSupportText(data)
+          : data?.respuesta_texto || getAssistantText(data?.resultado || data),
         sourceMessage: cleanTranscript,
-        intent: getIntent(data?.resultado || data),
-        options: getAssistantOptions(data?.resultado || data),
+        intent: medicineName ? "consulta_medicamento" : getIntent(data?.resultado || data),
+        options: medicineName ? [] : getAssistantOptions(data?.resultado || data),
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch {
