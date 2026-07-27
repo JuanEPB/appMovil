@@ -449,7 +449,7 @@ const printTicketInBrowser = (venta: any) => {
     return false;
   }
 
-  const printWindow = window.open("", "_blank", "width=430,height=720");
+  const printWindow = window.open("", "_blank", "width=860,height=960");
 
   if (!printWindow) {
     throw new Error("El navegador bloqueo la ventana de impresion.");
@@ -466,135 +466,272 @@ const printTicketInBrowser = (venta: any) => {
   return true;
 };
 
+const formatTicketMoney = (value: any) => `$${Number(value || 0).toFixed(2)}`;
+
+const buildTicketRows = (venta: any) =>
+  (venta.detalles || [])
+    .map((d: any, index: number) => {
+      const quantity = Number(d.cantidad || 0);
+      const unitPrice = Number(d.precioUnitario || 0);
+      const subtotal = Number(d.total ?? quantity * unitPrice);
+
+      return `
+        <tr>
+          <td class="index">${index + 1}</td>
+          <td>
+            <div class="product">${d.medicamento?.nombre ?? "Producto"}</div>
+            <div class="unit">${formatTicketMoney(unitPrice)} por unidad</div>
+          </td>
+          <td class="right">${quantity}</td>
+          <td class="right">${formatTicketMoney(unitPrice)}</td>
+          <td class="right strong">${formatTicketMoney(subtotal)}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
 const buildTicketHtml = (venta: any) => `
   <html>
     <head>
       <meta charset="utf-8" />
       <title>Ticket ${venta._id ?? "venta"}</title>
       <style>
-        @page { size: 80mm auto; margin: 6mm; }
+        @page { size: A4 portrait; margin: 14mm; }
         * { box-sizing: border-box; }
         body {
           margin: 0;
           font-family: Arial, Helvetica, sans-serif;
           color: #0f172a;
-          background: #eef4fb;
+          background: #f4f7fb;
+        }
+        .page {
+          width: 100%;
+          min-height: 100vh;
+          padding: 0;
         }
         .ticket {
           width: 100%;
+          max-width: 720px;
+          margin: 0 auto;
           border: 1px solid #d8e0ea;
           border-radius: 8px;
-          padding: 12px;
+          padding: 0;
           background: #ffffff;
+          overflow: hidden;
         }
         .header {
-          background: #2563eb;
+          display: flex;
+          justify-content: space-between;
+          gap: 24px;
+          background: #111827;
           color: #fff;
-          border-radius: 8px;
-          padding: 13px;
+          padding: 26px 30px;
         }
-        .brand { font-size: 19px; font-weight: 800; letter-spacing: 0; }
-        .subtitle { margin-top: 2px; font-size: 11px; color: #dbeafe; }
-        .folio { margin-top: 9px; font-size: 10px; font-weight: 700; }
+        .brand-wrap {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        .mark {
+          width: 44px;
+          height: 44px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #2563eb;
+          font-size: 18px;
+          font-weight: 800;
+        }
+        .brand { font-size: 22px; font-weight: 800; letter-spacing: 0; }
+        .subtitle { margin-top: 3px; font-size: 12px; color: #cbd5e1; }
+        .folio-box {
+          min-width: 170px;
+          text-align: right;
+        }
+        .folio-label {
+          color: #94a3b8;
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
+        .folio {
+          margin-top: 5px;
+          color: #fff;
+          font-size: 15px;
+          font-weight: 800;
+          word-break: break-word;
+        }
+        .content {
+          padding: 26px 30px 28px;
+        }
+        .meta-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 10px;
+          margin-bottom: 22px;
+        }
         .meta {
-          margin: 10px 0;
-          padding: 9px;
+          min-height: 72px;
+          padding: 12px;
           border: 1px solid #e2e8f0;
           border-radius: 8px;
           background: #f8fafc;
-          font-size: 10.5px;
-          color: #334155;
-          line-height: 1.45;
         }
         .label {
-          display: inline-block;
-          min-width: 44px;
           color: #64748b;
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
+        .value {
+          margin-top: 7px;
+          color: #0f172a;
+          font-size: 13px;
+          font-weight: 700;
+          line-height: 1.35;
+          word-break: break-word;
+        }
+        .section-title {
+          margin: 0 0 10px;
+          color: #0f172a;
+          font-size: 14px;
           font-weight: 800;
         }
         table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 10.5px;
+          font-size: 12px;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          overflow: hidden;
         }
         th {
-          color: #475569;
+          color: #334155;
           text-align: left;
           background: #eff6ff;
           border-bottom: 1px solid #dbeafe;
-          padding: 7px 4px;
-          font-size: 9.5px;
+          padding: 10px 9px;
+          font-size: 10px;
           text-transform: uppercase;
         }
         td {
           border-bottom: 1px solid #edf2f7;
-          padding: 7px 4px;
+          padding: 11px 9px;
           vertical-align: top;
         }
-        .product { font-weight: 700; }
-        .unit { color: #64748b; font-size: 9.5px; margin-top: 2px; }
+        tr:last-child td { border-bottom: 0; }
+        .index { width: 34px; color: #64748b; font-weight: 800; }
+        .product { font-weight: 800; color: #111827; }
+        .unit { color: #64748b; font-size: 10.5px; margin-top: 3px; }
         .right { text-align: right; }
+        .strong { font-weight: 800; color: #111827; }
+        .summary {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 18px;
+        }
         .total-box {
-          margin-top: 11px;
+          width: 260px;
           border: 1px solid #bfdbfe;
           border-radius: 8px;
           background: #eff6ff;
-          padding: 9px;
-          text-align: right;
+          padding: 16px;
         }
-        .total-label { color: #64748b; font-size: 9.5px; font-weight: 800; text-transform: uppercase; }
-        .total { color: #1d4ed8; font-size: 19px; font-weight: 800; margin-top: 2px; }
-        .footer {
-          margin-top: 11px;
-          padding-top: 9px;
-          border-top: 1px dashed #cbd5e1;
-          text-align: center;
+        .total-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          gap: 16px;
+        }
+        .total-label {
           color: #64748b;
           font-size: 10px;
-          line-height: 1.35;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
+        .total { color: #1d4ed8; font-size: 25px; font-weight: 800; }
+        .footer {
+          margin-top: 26px;
+          padding: 14px 0 0;
+          border-top: 1px solid #e2e8f0;
+          color: #64748b;
+          font-size: 11px;
+          line-height: 1.5;
+          display: flex;
+          justify-content: space-between;
+          gap: 20px;
+        }
+        @media print {
+          body { background: #fff; }
+          .page { min-height: auto; }
         }
       </style>
     </head>
     <body>
-      <div class="ticket">
-        <div class="header">
-          <div class="brand">PharmaControl</div>
-          <div class="subtitle">Comprobante profesional de venta</div>
-          <div class="folio">Folio ${venta._id ?? "N/A"}</div>
-        </div>
-        <div class="meta">
-          <span class="label">Fecha</span> ${new Date(venta.fecha).toLocaleString()}<br/>
-          <span class="label">Cliente</span> ${venta.usuario?.nombre ?? "Cliente"} ${venta.usuario?.apellido ?? ""}<br/>
-          <span class="label">Sistema</span> Pharma Neural V2
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Producto</th>
-              <th class="right">Cant.</th>
-              <th class="right">Importe</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(venta.detalles || [])
-              .map(
-                (d: any) =>
-                  `<tr><td><div class="product">${d.medicamento?.nombre ?? "Producto"}</div><div class="unit">$${Number(
-                    d.precioUnitario || 0
-                  ).toFixed(2)} c/u</div></td><td class="right">${d.cantidad}</td><td class="right"><b>$${Number(
-                    d.total ?? (d.cantidad || 0) * (d.precioUnitario || 0)
-                  ).toFixed(2)}</b></td></tr>`
-              )
-              .join("")}
-          </tbody>
-        </table>
-        <div class="total-box">
-          <div class="total-label">Total pagado</div>
-          <div class="total">$${Number(venta.total || 0).toFixed(2)}</div>
-        </div>
-        <div class="footer">
-          Gracias por su compra<br/>
-          Control inteligente para tu farmacia
+      <div class="page">
+        <div class="ticket">
+          <div class="header">
+            <div class="brand-wrap">
+              <div class="mark">PC</div>
+              <div>
+                <div class="brand">PharmaControl</div>
+                <div class="subtitle">Comprobante profesional de venta</div>
+              </div>
+            </div>
+            <div class="folio-box">
+              <div class="folio-label">Folio</div>
+              <div class="folio">${venta._id ?? "N/A"}</div>
+            </div>
+          </div>
+          <div class="content">
+            <div class="meta-grid">
+              <div class="meta">
+                <div class="label">Fecha</div>
+                <div class="value">${new Date(venta.fecha).toLocaleString()}</div>
+              </div>
+              <div class="meta">
+                <div class="label">Cliente</div>
+                <div class="value">${venta.usuario?.nombre ?? "Cliente"} ${venta.usuario?.apellido ?? ""}</div>
+              </div>
+              <div class="meta">
+                <div class="label">Sistema</div>
+                <div class="value">Pharma Neural V2</div>
+              </div>
+            </div>
+            <h2 class="section-title">Detalle de productos</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Producto</th>
+                  <th class="right">Cant.</th>
+                  <th class="right">Precio</th>
+                  <th class="right">Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${buildTicketRows(venta)}
+              </tbody>
+            </table>
+            <div class="summary">
+              <div class="total-box">
+                <div class="total-row">
+                  <div class="total-label">Total pagado</div>
+                  <div class="total">${formatTicketMoney(venta.total)}</div>
+                </div>
+              </div>
+            </div>
+            <div class="footer">
+              <div>
+                <strong>Gracias por su compra.</strong><br/>
+                Control inteligente para tu farmacia.
+              </div>
+              <div>
+                Documento generado por Pharma Neural V2.
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </body>
