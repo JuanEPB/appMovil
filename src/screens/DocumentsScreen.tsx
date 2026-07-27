@@ -31,6 +31,8 @@ import { isDemoToken } from "../data/localDb";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
 import { tw } from "../themes/tailwindTokens";
 
+declare const window: any;
+
 export const DocumentsScreen = () => {
   const { theme } = useTheme();
   const { width } = useWindowDimensions();
@@ -64,9 +66,25 @@ export const DocumentsScreen = () => {
 
       try {
         const venta = JSON.parse(text);
-        const pdf = await Print.printToFileAsync({ html: buildTicketHtml(venta) });
-        if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(pdf.uri, { mimeType: "application/pdf" });
-        else setCurrentFile(pdf.uri);
+
+        if (printTicketInBrowser(venta)) {
+          setSuccessMessage("Ticket listo para guardar como PDF.");
+          setShowSuccess(true);
+          return;
+        }
+
+        const pdf = await Print.printToFileAsync({
+          html: buildTicketHtml(venta),
+        });
+
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(pdf.uri, {
+            mimeType: "application/pdf",
+          });
+        } else {
+          setCurrentFile(pdf.uri);
+        }
+
         setSuccessMessage("Ticket convertido correctamente a PDF.");
       } catch {
         if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(res.uri, { mimeType: "application/pdf" });
@@ -121,6 +139,15 @@ export const DocumentsScreen = () => {
   const exportLocalTicket = async (venta: any) => {
     try {
       setDownloading(venta._id);
+
+      if (printTicketInBrowser(venta)) {
+        setSuccessMessage(
+          "Ticket listo para guardar como PDF desde el navegador."
+        );
+        setShowSuccess(true);
+        return;
+      }
+
       const pdf = await Print.printToFileAsync({
         html: buildTicketHtml(venta),
       });
@@ -417,10 +444,33 @@ const EmptyText = ({ text }: { text: string }) => {
   return <Text style={[styles.empty, { color: theme.colors.textMuted }]}>{text}</Text>;
 };
 
+const printTicketInBrowser = (venta: any) => {
+  if (Platform.OS !== "web" || typeof window === "undefined") {
+    return false;
+  }
+
+  const printWindow = window.open("", "_blank", "width=430,height=720");
+
+  if (!printWindow) {
+    throw new Error("El navegador bloqueo la ventana de impresion.");
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(buildTicketHtml(venta));
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.setTimeout(() => {
+    printWindow.print();
+  }, 250);
+
+  return true;
+};
+
 const buildTicketHtml = (venta: any) => `
   <html>
     <head>
       <meta charset="utf-8" />
+      <title>Ticket ${venta._id ?? "venta"}</title>
       <style>
         @page { size: 80mm auto; margin: 6mm; }
         * { box-sizing: border-box; }
