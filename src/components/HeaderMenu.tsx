@@ -35,15 +35,21 @@ const HeaderMenu = () => {
           accessibilityLabel="Abrir menu"
           accessibilityHint="Abre el menu lateral"
           activeOpacity={0.75}
-          style={[styles.menuTouch, { backgroundColor: theme.colors.background }]}
+          style={[
+            styles.menuTouch,
+            {
+              backgroundColor: theme.colors.background,
+              borderColor: theme.colors.border,
+            },
+          ]}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Feather name="menu" size={22} color={theme.colors.text} />
         </TouchableOpacity>
 
         <View style={styles.titleWrap} pointerEvents="none">
-          <Text style={[styles.eyebrow, { color: theme.colors.textMuted }]}>
-            Version 2
+          <Text style={[styles.eyebrow, { color: theme.colors.primary }]}>
+            IA operativa
           </Text>
           <Text
             numberOfLines={1}
@@ -61,7 +67,7 @@ const HeaderMenu = () => {
 
         <View style={[styles.statusPill, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
           <View style={[styles.statusDot, { backgroundColor: theme.colors.success }]} />
-          {width > 520 ? <Text style={[styles.statusText, { color: theme.colors.textMuted }]}>IA</Text> : null}
+          {width > 520 ? <Text style={[styles.statusText, { color: theme.colors.textMuted }]}>Online</Text> : null}
         </View>
       </View>
     </View>
@@ -88,6 +94,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 8,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },

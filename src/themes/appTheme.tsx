@@ -21,26 +21,26 @@ export interface ExtendedTheme extends Theme {
   };
 }
 
-// ðŸŒž Tema claro (basado en MedManager / PharmaControl)
+// Tema claro (basado en MedManager / PharmaControl)
 export const lightTheme: ExtendedTheme = {
   dark: false,
   mode: "light",
   colors: {
-    primary: "#2563EB", // azul principal
-    secondary: "#059669", // celeste verdoso
+    primary: "#2563EB",
+    secondary: "#0F766E",
     gradientStart: "#2563EB",
-    gradientEnd: "#059669",
-    background: "#F4F7FB", // fondo general claro
-    card: "#FFFFFF", // tarjetas blancas
-    text: "#111827", // texto oscuro
-    textMuted: "#64748B", // texto secundario
-    border: "#D8E0EA", // bordes suaves
-    success: "#059669", // verde Ã©xito
-    warning: "#D97706", // naranja aviso
-    danger: "#DC2626", // rojo alerta
-    info: "#0284C7", // azul informativo
+    gradientEnd: "#0F766E",
+    background: "#F6F8FB",
+    card: "#FFFFFF",
+    text: "#0F172A",
+    textMuted: "#64748B",
+    border: "#D9E2EC",
+    success: "#059669",
+    warning: "#D97706",
+    danger: "#DC2626",
+    info: "#0284C7",
     notification: "#2563EB",
-    cardShadow: "rgba(15,23,42,0.08)", // sombra sutil
+    cardShadow: "rgba(15,23,42,0.10)",
   },
   fonts: {
     regular: { fontFamily: "Inter-Regular", fontWeight: "400" },
@@ -50,26 +50,26 @@ export const lightTheme: ExtendedTheme = {
   },
 };
 
-// ðŸŒš Tema oscuro
+// Tema oscuro
 export const darkTheme: ExtendedTheme = {
   dark: true,
   mode: "dark",
   colors: {
     primary: "#60A5FA",
-    secondary: "#34D399",
-    gradientStart: "#2563EB",
-    gradientEnd: "#059669",
-    background: "#0B1118",
-    card: "#121A24",
+    secondary: "#2DD4BF",
+    gradientStart: "#1D4ED8",
+    gradientEnd: "#0F766E",
+    background: "#0A1017",
+    card: "#111A24",
     text: "#F8FAFC",
     textMuted: "#94A3B8",
-    border: "#263241",
+    border: "#273545",
     success: "#34D399",
     warning: "#F59E0B",
     danger: "#F87171",
     info: "#38BDF8",
     notification: "#60A5FA",
-    cardShadow: "rgba(0,0,0,0.4)",
+    cardShadow: "rgba(0,0,0,0.5)",
   },
   fonts: {
     regular: { fontFamily: "Inter-Regular", fontWeight: "400" },

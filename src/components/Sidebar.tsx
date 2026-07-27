@@ -47,13 +47,13 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = ({ navigation, sta
             PharmaControl
           </Text>
           <Text numberOfLines={1} style={styles.subBrand}>
-            Gestion de farmacia
+            Gestión de farmacia
           </Text>
         </View>
       </LinearGradient>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.sectionTitle}>Navegacion</Text>
+        <Text style={styles.sectionTitle}>Navegación</Text>
         {navItems.map((item) => {
           const isActive = currentRoute === item.route;
           return (
@@ -64,6 +64,7 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = ({ navigation, sta
                 isActive && {
                   borderColor: item.color,
                   backgroundColor: theme.colors.background,
+                  shadowColor: theme.colors.cardShadow,
                 },
               ]}
               onPress={() => go(item.route)}

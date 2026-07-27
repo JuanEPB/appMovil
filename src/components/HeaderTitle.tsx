@@ -16,6 +16,11 @@ export const HeaderTitle = ({ title, subtitle }: { title: string; subtitle?: str
 const getStyles = (theme: any) =>
   StyleSheet.create({
     wrapper: { marginBottom: 12 },
-    title: { fontSize: 26, fontWeight: "800", color: theme.colors.text },
-    subtitle: { color: theme.colors.textMuted, marginTop: 2 },
+    title: { fontSize: 28, fontWeight: "800", color: theme.colors.text },
+    subtitle: {
+      color: theme.colors.textMuted,
+      marginTop: 4,
+      fontSize: 14,
+      lineHeight: 20,
+    },
   });

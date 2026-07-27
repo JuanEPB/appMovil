@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, ViewStyle } from "react-native";
 import { useTheme } from "../context/ThemeContext";
+import { shadow } from "../utils/responsive";
 
 type Props = {
   title: string;
@@ -32,21 +33,19 @@ const getStyles = (theme: any) =>
       borderRadius: 8,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      padding: 14,
+      padding: 15,
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-      shadowColor: "#000",
-      shadowOpacity: 0.06,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 2,
+      ...shadow(theme.colors.cardShadow),
     },
-    title: { color: theme.colors.text, fontSize: 16, fontWeight: "700" },
-    subtitle: { color: theme.colors.textMuted, marginTop: 4 },
+    title: { color: theme.colors.text, fontSize: 16, fontWeight: "800" },
+    subtitle: { color: theme.colors.textMuted, marginTop: 4, lineHeight: 19 },
     chip: {
       alignSelf: "flex-start",
       marginTop: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       backgroundColor: theme.colors.background,
       color: theme.colors.primary,
       paddingHorizontal: 10,
