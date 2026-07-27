@@ -25,7 +25,12 @@ export const GradientButton: React.FC<Props> = ({ title, onPress, style, iconLef
   };
 
   return (
-    <Pressable onPress={onPress} onPressIn={() => animate(0.97)} onPressOut={() => animate(1)}>
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => animate(0.98)}
+      onPressOut={() => animate(1)}
+      accessibilityRole="button"
+    >
       <Animated.View style={[styles.wrapper, style, { transform: [{ scale }] }]}>
         <LinearGradient
           colors={[theme.colors.primary, theme.colors.secondary]}
@@ -42,14 +47,15 @@ export const GradientButton: React.FC<Props> = ({ title, onPress, style, iconLef
 };
 
 const styles = StyleSheet.create({
-  wrapper: { borderRadius: 14, overflow: "hidden" },
+  wrapper: { borderRadius: 8, overflow: "hidden" },
   gradient: {
-    paddingVertical: 14,
+    minHeight: 46,
+    paddingVertical: 12,
     paddingHorizontal: 18,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     gap: 8,
   },
-  text: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  text: { color: "#fff", fontWeight: "800", fontSize: 15 },
 });

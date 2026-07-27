@@ -9,6 +9,9 @@ interface StatsResponse {
   porCaducar: number;
   caducados: number;
   porCategoria: Record<string, number>;
+  bajoStock?: number;
+  agotados?: number;
+  valorInventario?: number;
 }
 
 export const useStats = () => {

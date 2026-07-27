@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -23,11 +24,14 @@ import { HeaderMenu } from "../components/HeaderMenu";
 import { FadeSlideIn as Fade } from "../components/FadeSlideIn";
 import { SuccessModal } from "../components/SuccessModal";
 import { apiPharma } from "../api/apiPharma";
+import { getSaleTicketPdfUrl } from "../api/apiNeural";
 import { useTheme } from "../context/ThemeContext";
 import { useDocuments } from "../hooks/useDocumentosHook";
 import { isDemoToken } from "../data/localDb";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
 import { tw } from "../themes/tailwindTokens";
+
+declare const window: any;
 
 export const DocumentsScreen = () => {
   const { theme } = useTheme();
@@ -62,9 +66,25 @@ export const DocumentsScreen = () => {
 
       try {
         const venta = JSON.parse(text);
-        const pdf = await Print.printToFileAsync({ html: buildTicketHtml(venta) });
-        if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(pdf.uri, { mimeType: "application/pdf" });
-        else setCurrentFile(pdf.uri);
+
+        if (printTicketInBrowser(venta)) {
+          setSuccessMessage("Ticket listo para guardar como PDF.");
+          setShowSuccess(true);
+          return;
+        }
+
+        const pdf = await Print.printToFileAsync({
+          html: buildTicketHtml(venta),
+        });
+
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(pdf.uri, {
+            mimeType: "application/pdf",
+          });
+        } else {
+          setCurrentFile(pdf.uri);
+        }
+
         setSuccessMessage("Ticket convertido correctamente a PDF.");
       } catch {
         if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(res.uri, { mimeType: "application/pdf" });
@@ -75,6 +95,77 @@ export const DocumentsScreen = () => {
       setShowSuccess(true);
     } catch (downloadError) {
       console.error("Error al generar PDF:", downloadError);
+      Alert.alert("Error", "No se pudo generar el PDF");
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const getBackendVentaId = (id: string) => {
+    const match = String(id || "").match(/\d+$/);
+    return match ? match[0] : null;
+  };
+
+  const handleExportVenta = async (venta: any) => {
+    const backendVentaId = getBackendVentaId(venta?._id);
+
+    if (!backendVentaId || String(venta?._id || "").includes("demo")) {
+      await exportLocalTicket(venta);
+      return;
+    }
+
+    try {
+      setDownloading(venta._id);
+      const url = getSaleTicketPdfUrl(backendVentaId);
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        await exportLocalTicket(venta);
+        return;
+      }
+
+      await Linking.openURL(url);
+
+      setSuccessMessage("Ticket PDF abierto desde Pharma Neural V2.");
+      setShowSuccess(true);
+    } catch (downloadError) {
+      console.error("Error al abrir PDF del backend:", downloadError);
+      await exportLocalTicket(venta);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const exportLocalTicket = async (venta: any) => {
+    try {
+      setDownloading(venta._id);
+
+      if (printTicketInBrowser(venta)) {
+        setSuccessMessage(
+          "Ticket listo para guardar como PDF desde el navegador."
+        );
+        setShowSuccess(true);
+        return;
+      }
+
+      const pdf = await Print.printToFileAsync({
+        html: buildTicketHtml(venta),
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(pdf.uri, {
+          mimeType: "application/pdf",
+        });
+      } else {
+        setCurrentFile(pdf.uri);
+      }
+
+      setSuccessMessage(
+        "Ticket convertido correctamente a PDF desde la app."
+      );
+      setShowSuccess(true);
+    } catch (downloadError) {
+      console.error("Error al generar PDF local:", downloadError);
       Alert.alert("Error", "No se pudo generar el PDF");
     } finally {
       setDownloading(null);
@@ -156,7 +247,7 @@ export const DocumentsScreen = () => {
                 primaryLabel="Ver ticket"
                 onPrimary={() => setSelectedVenta(venta)}
                 secondaryLabel="Exportar"
-                onSecondary={() => handleDownload(venta._id, `venta_${venta._id}.pdf`)}
+                onSecondary={() => handleExportVenta(venta)}
                 loading={downloading === venta._id}
               />
             ))
@@ -353,48 +444,158 @@ const EmptyText = ({ text }: { text: string }) => {
   return <Text style={[styles.empty, { color: theme.colors.textMuted }]}>{text}</Text>;
 };
 
+const printTicketInBrowser = (venta: any) => {
+  if (Platform.OS !== "web" || typeof window === "undefined") {
+    return false;
+  }
+
+  const printWindow = window.open("", "_blank", "width=430,height=720");
+
+  if (!printWindow) {
+    throw new Error("El navegador bloqueo la ventana de impresion.");
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(buildTicketHtml(venta));
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.setTimeout(() => {
+    printWindow.print();
+  }, 250);
+
+  return true;
+};
+
 const buildTicketHtml = (venta: any) => `
   <html>
     <head>
       <meta charset="utf-8" />
+      <title>Ticket ${venta._id ?? "venta"}</title>
       <style>
-        @page { size: 80mm auto; margin: 8mm; }
-        body { font-family: Arial, sans-serif; color: #0f172a; background: #f8fafc; }
-        .ticket { border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px; background: #fff; }
-        .header { background: linear-gradient(135deg, #2563eb, #0ea5e9); color: #fff; border-radius: 14px; padding: 14px; text-align: center; }
-        .brand { font-size: 20px; font-weight: 800; }
-        .meta { margin: 12px 0; font-size: 12px; color: #334155; }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; }
-        th { color: #64748b; text-align: left; border-bottom: 1px solid #e2e8f0; padding: 6px 0; }
-        td { border-bottom: 1px solid #f1f5f9; padding: 6px 0; }
+        @page { size: 80mm auto; margin: 6mm; }
+        * { box-sizing: border-box; }
+        body {
+          margin: 0;
+          font-family: Arial, Helvetica, sans-serif;
+          color: #0f172a;
+          background: #eef4fb;
+        }
+        .ticket {
+          width: 100%;
+          border: 1px solid #d8e0ea;
+          border-radius: 8px;
+          padding: 12px;
+          background: #ffffff;
+        }
+        .header {
+          background: #2563eb;
+          color: #fff;
+          border-radius: 8px;
+          padding: 13px;
+        }
+        .brand { font-size: 19px; font-weight: 800; letter-spacing: 0; }
+        .subtitle { margin-top: 2px; font-size: 11px; color: #dbeafe; }
+        .folio { margin-top: 9px; font-size: 10px; font-weight: 700; }
+        .meta {
+          margin: 10px 0;
+          padding: 9px;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          background: #f8fafc;
+          font-size: 10.5px;
+          color: #334155;
+          line-height: 1.45;
+        }
+        .label {
+          display: inline-block;
+          min-width: 44px;
+          color: #64748b;
+          font-weight: 800;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 10.5px;
+        }
+        th {
+          color: #475569;
+          text-align: left;
+          background: #eff6ff;
+          border-bottom: 1px solid #dbeafe;
+          padding: 7px 4px;
+          font-size: 9.5px;
+          text-transform: uppercase;
+        }
+        td {
+          border-bottom: 1px solid #edf2f7;
+          padding: 7px 4px;
+          vertical-align: top;
+        }
+        .product { font-weight: 700; }
+        .unit { color: #64748b; font-size: 9.5px; margin-top: 2px; }
         .right { text-align: right; }
-        .total { margin-top: 12px; background: #f0f9ff; border-radius: 12px; padding: 10px; text-align: right; font-size: 18px; font-weight: 800; color: #2563eb; }
-        .footer { margin-top: 12px; text-align: center; color: #64748b; font-size: 11px; }
+        .total-box {
+          margin-top: 11px;
+          border: 1px solid #bfdbfe;
+          border-radius: 8px;
+          background: #eff6ff;
+          padding: 9px;
+          text-align: right;
+        }
+        .total-label { color: #64748b; font-size: 9.5px; font-weight: 800; text-transform: uppercase; }
+        .total { color: #1d4ed8; font-size: 19px; font-weight: 800; margin-top: 2px; }
+        .footer {
+          margin-top: 11px;
+          padding-top: 9px;
+          border-top: 1px dashed #cbd5e1;
+          text-align: center;
+          color: #64748b;
+          font-size: 10px;
+          line-height: 1.35;
+        }
       </style>
     </head>
     <body>
       <div class="ticket">
-        <div class="header"><div class="brand">PharmaControl</div><div>Comprobante de venta</div></div>
+        <div class="header">
+          <div class="brand">PharmaControl</div>
+          <div class="subtitle">Comprobante profesional de venta</div>
+          <div class="folio">Folio ${venta._id ?? "N/A"}</div>
+        </div>
         <div class="meta">
-          <b>Folio:</b> ${venta._id ?? "N/A"}<br/>
-          <b>Fecha:</b> ${new Date(venta.fecha).toLocaleString()}<br/>
-          <b>Cliente:</b> ${venta.usuario?.nombre ?? "Cliente"} ${venta.usuario?.apellido ?? ""}
+          <span class="label">Fecha</span> ${new Date(venta.fecha).toLocaleString()}<br/>
+          <span class="label">Cliente</span> ${venta.usuario?.nombre ?? "Cliente"} ${venta.usuario?.apellido ?? ""}<br/>
+          <span class="label">Sistema</span> Pharma Neural V2
         </div>
         <table>
-          <thead><tr><th>Producto</th><th class="right">Cant.</th><th class="right">Importe</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th class="right">Cant.</th>
+              <th class="right">Importe</th>
+            </tr>
+          </thead>
           <tbody>
             ${(venta.detalles || [])
               .map(
                 (d: any) =>
-                  `<tr><td>${d.medicamento?.nombre ?? ""}</td><td class="right">${d.cantidad}</td><td class="right">$${Number(
+                  `<tr><td><div class="product">${d.medicamento?.nombre ?? "Producto"}</div><div class="unit">$${Number(
+                    d.precioUnitario || 0
+                  ).toFixed(2)} c/u</div></td><td class="right">${d.cantidad}</td><td class="right"><b>$${Number(
                     d.total ?? (d.cantidad || 0) * (d.precioUnitario || 0)
-                  ).toFixed(2)}</td></tr>`
+                  ).toFixed(2)}</b></td></tr>`
               )
               .join("")}
           </tbody>
         </table>
-        <div class="total">$${Number(venta.total || 0).toFixed(2)}</div>
-        <div class="footer">Gracias por su compra<br/>Control inteligente para tu farmacia</div>
+        <div class="total-box">
+          <div class="total-label">Total pagado</div>
+          <div class="total">$${Number(venta.total || 0).toFixed(2)}</div>
+        </div>
+        <div class="footer">
+          Gracias por su compra<br/>
+          Control inteligente para tu farmacia
+        </div>
       </div>
     </body>
   </html>

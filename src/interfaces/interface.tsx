@@ -40,10 +40,12 @@ export interface Medicamento {
   nombre: string;
   lote: string;
   caducidad: string;
-  proveedor: Proveedor;
+  proveedor: Proveedor | string;
   stock: number;
   precio: number;
-  categoria: Categoria;
+  categoria: Categoria | string;
+  principioActivo?: string;
+  descripcion?: string;
 }
 
 export interface DetalleVenta {
