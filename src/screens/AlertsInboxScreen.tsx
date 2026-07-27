@@ -34,10 +34,36 @@ type AlertItem = {
   recomendacion?: string;
 };
 
-const statusColor = (theme: any, status?: string) => {
-  if (status === "CADUCADO" || status === "AGOTADO") return theme.colors.danger;
-  if (status === "CRITICO" || status === "PRECAUCION") return theme.colors.warning;
-  return theme.colors.primary;
+type AlertPresentation = {
+  color: string;
+  icon: React.ComponentProps<typeof Feather>["name"];
+  label: string;
+};
+
+const getAlertPresentation = (theme: any, status?: string): AlertPresentation => {
+  const normalized = String(status || "").toUpperCase();
+
+  if (normalized === "AGOTADO") {
+    return { color: theme.colors.danger, icon: "x-circle", label: "Agotado" };
+  }
+
+  if (normalized === "CADUCADO") {
+    return { color: theme.colors.danger, icon: "calendar", label: "Caducado" };
+  }
+
+  if (normalized === "CRITICO") {
+    return { color: theme.colors.warning, icon: "alert-octagon", label: "Crítico" };
+  }
+
+  if (normalized === "PRECAUCION") {
+    return { color: theme.colors.warning, icon: "alert-triangle", label: "Bajo stock" };
+  }
+
+  if (normalized === "PROXIMO_A_CADUCAR") {
+    return { color: theme.colors.info, icon: "clock", label: "Por caducar" };
+  }
+
+  return { color: theme.colors.primary, icon: "bell", label: "Alerta" };
 };
 
 const printReportOnWeb = (html: string) => {
@@ -203,7 +229,8 @@ export const AlertsInboxScreen = () => {
         ) : (
           <View style={[styles.grid, { gap: layout.gap }]}>
             {alerts.map((alert, index) => {
-              const color = statusColor(theme, alert.estado);
+              const presentation = getAlertPresentation(theme, alert.estado);
+              const color = presentation.color;
 
               return (
                 <View
@@ -211,26 +238,36 @@ export const AlertsInboxScreen = () => {
                   style={[styles.card, { borderLeftColor: color }]}
                 >
                   <View style={styles.cardTop}>
-                    <View style={[styles.statusBadge, { backgroundColor: `${color}18` }]}>
-                      <Text style={[styles.statusText, { color }]}>
-                        {alert.estado || "ALERTA"}
-                      </Text>
+                    <View style={styles.alertIdentity}>
+                      <View style={[styles.alertIcon, { backgroundColor: `${color}18` }]}>
+                        <Feather name={presentation.icon} size={17} color={color} />
+                      </View>
+                      <View style={styles.alertTitleBlock}>
+                        <Text style={[styles.statusText, { color }]}>
+                          {presentation.label}
+                        </Text>
+                        <Text numberOfLines={2} style={styles.cardTitle}>
+                          {alert.nombre || "Medicamento"}
+                        </Text>
+                      </View>
                     </View>
                     <Text style={styles.lotText}>Lote {alert.lote || "N/A"}</Text>
                   </View>
 
-                  <Text style={styles.cardTitle}>{alert.nombre || "Medicamento"}</Text>
+                  <Text style={styles.recommendation}>
+                    {alert.recomendacion || "Revisar este medicamento."}
+                  </Text>
 
                   <View style={styles.stockRow}>
-                    <View>
+                    <View style={styles.stockPill}>
                       <Text style={styles.smallLabel}>Stock</Text>
                       <Text style={styles.stockValue}>{Number(alert.stock ?? 0)}</Text>
                     </View>
-                    <View>
+                    <View style={styles.stockPill}>
                       <Text style={styles.smallLabel}>Mínimo</Text>
                       <Text style={styles.stockValue}>{Number(alert.stock_minimo ?? 0)}</Text>
                     </View>
-                    <View>
+                    <View style={styles.stockPill}>
                       <Text style={styles.smallLabel}>Comprar</Text>
                       <Text style={[styles.stockValue, { color }]}>
                         {Number(alert.cantidad_recomendada ?? 0)}
@@ -238,9 +275,6 @@ export const AlertsInboxScreen = () => {
                     </View>
                   </View>
 
-                  <Text style={styles.recommendation}>
-                    {alert.recomendacion || "Revisar este medicamento."}
-                  </Text>
                 </View>
               );
             })}
@@ -398,12 +432,12 @@ const getStyles = (theme: any, isPhone: boolean) =>
       flexGrow: 1,
       flexBasis: isPhone ? "100%" : "47%",
       minWidth: isPhone ? "100%" : 320,
-      borderRadius: 10,
+      borderRadius: 8,
       borderWidth: 1,
       borderLeftWidth: 4,
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.card,
-      padding: 15,
+      padding: 14,
       ...shadow(theme.colors.cardShadow),
     },
     cardTop: {
@@ -413,6 +447,24 @@ const getStyles = (theme: any, isPhone: boolean) =>
       gap: 10,
       marginBottom: 10,
     },
+    alertIdentity: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    alertIcon: {
+      width: 38,
+      height: 38,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
+    },
+    alertTitleBlock: {
+      flex: 1,
+      minWidth: 0,
+    },
     statusBadge: {
       borderRadius: 999,
       paddingHorizontal: 10,
@@ -421,11 +473,14 @@ const getStyles = (theme: any, isPhone: boolean) =>
     statusText: {
       fontSize: 11,
       fontWeight: "800",
+      textTransform: "uppercase",
     },
     lotText: {
       color: theme.colors.textMuted,
       fontSize: 12,
       fontWeight: "600",
+      maxWidth: 112,
+      textAlign: "right",
     },
     cardTitle: {
       color: theme.colors.text,
@@ -436,11 +491,18 @@ const getStyles = (theme: any, isPhone: boolean) =>
     stockRow: {
       flexDirection: "row",
       justifyContent: "space-between",
-      gap: 12,
+      gap: 8,
+      marginTop: 13,
+    },
+    stockPill: {
+      flex: 1,
+      minWidth: 0,
       borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
       backgroundColor: theme.colors.background,
-      padding: 12,
-      marginTop: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 10,
     },
     smallLabel: {
       color: theme.colors.textMuted,
@@ -458,7 +520,7 @@ const getStyles = (theme: any, isPhone: boolean) =>
       color: theme.colors.text,
       fontSize: 13,
       lineHeight: 19,
-      marginTop: 12,
+      marginTop: 2,
     },
     pressed: { opacity: 0.78 },
   });
