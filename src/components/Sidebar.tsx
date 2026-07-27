@@ -59,7 +59,13 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = ({ navigation, sta
           return (
             <TouchableOpacity
               key={item.route}
-              style={[styles.navItem, isActive && { borderColor: item.color, backgroundColor: theme.colors.background }]}
+              style={[
+                styles.navItem,
+                isActive && {
+                  borderColor: item.color,
+                  backgroundColor: theme.colors.background,
+                },
+              ]}
               onPress={() => go(item.route)}
               activeOpacity={0.82}
             >
@@ -67,7 +73,7 @@ export const Sidebar: React.FC<DrawerContentComponentProps> = ({ navigation, sta
                 <Ionicons name={item.icon as any} size={20} color={item.color} />
               </View>
               <Text style={styles.navLabel}>{item.label}</Text>
-              {isActive && <View style={[styles.activeDot, { backgroundColor: item.color }]} />}
+              {isActive && <Ionicons name="chevron-forward" size={16} color={item.color} />}
             </TouchableOpacity>
           );
         })}
@@ -133,7 +139,7 @@ const getStyles = (theme: any) =>
       padding: 18,
       gap: 12,
       margin: 12,
-      borderRadius: 16,
+      borderRadius: 8,
       ...shadow(theme.colors.cardShadow),
     },
     logo: { width: 46, height: 46, resizeMode: "contain" },
@@ -152,7 +158,7 @@ const getStyles = (theme: any) =>
       minHeight: 52,
       flexDirection: "row",
       alignItems: "center",
-      borderRadius: 14,
+      borderRadius: 8,
       borderWidth: 1,
       borderColor: "transparent",
       paddingHorizontal: 10,
@@ -162,7 +168,7 @@ const getStyles = (theme: any) =>
     navIcon: {
       width: 36,
       height: 36,
-      borderRadius: 10,
+      borderRadius: 8,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -172,7 +178,6 @@ const getStyles = (theme: any) =>
       fontSize: 15,
       fontWeight: "700",
     },
-    activeDot: { width: 8, height: 8, borderRadius: 4 },
     summaryCard: {
       flexDirection: "row",
       alignItems: "center",
@@ -180,7 +185,7 @@ const getStyles = (theme: any) =>
       backgroundColor: theme.colors.background,
       borderWidth: 1,
       borderColor: theme.colors.border,
-      borderRadius: 14,
+      borderRadius: 8,
       padding: 12,
       marginBottom: 8,
     },
@@ -211,7 +216,7 @@ const getStyles = (theme: any) =>
       height: 36,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 10,
+      borderRadius: 8,
       backgroundColor: theme.colors.background,
     },
   });

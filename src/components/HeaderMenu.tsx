@@ -42,6 +42,9 @@ const HeaderMenu = () => {
         </TouchableOpacity>
 
         <View style={styles.titleWrap} pointerEvents="none">
+          <Text style={[styles.eyebrow, { color: theme.colors.textMuted }]}>
+            Version 2
+          </Text>
           <Text
             numberOfLines={1}
             style={[
@@ -56,7 +59,10 @@ const HeaderMenu = () => {
           </Text>
         </View>
 
-        <View style={styles.rightPlaceholder} />
+        <View style={[styles.statusPill, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
+          <View style={[styles.statusDot, { backgroundColor: theme.colors.success }]} />
+          {width > 520 ? <Text style={[styles.statusText, { color: theme.colors.textMuted }]}>IA</Text> : null}
+        </View>
       </View>
     </View>
   );
@@ -68,9 +74,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderBottomWidth: 1,
     paddingVertical: Platform.OS === "ios" ? 12 : 10,
-    elevation: 3,
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
+    elevation: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
   },
   inner: {
@@ -81,9 +87,17 @@ const styles = StyleSheet.create({
   menuTouch: {
     width: 44,
     height: 44,
-    borderRadius: 10,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+  },
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    textAlign: "center",
+    marginBottom: 1,
   },
   titleWrap: {
     flex: 1,
@@ -96,9 +110,25 @@ const styles = StyleSheet.create({
     textAlign: "center",
     includeFontPadding: false,
   },
-  rightPlaceholder: {
-    width: 44,
-    height: 44,
+  statusPill: {
+    minWidth: 44,
+    height: 34,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: "800",
   },
 });
 

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Platform } from 'react-native';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { DocumentsScreen } from '../screens/DocumentsScreen';
@@ -19,7 +20,27 @@ export const TabNavigator = () => {
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,
-        tabBarStyle: { backgroundColor: theme.colors.card },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '800',
+          marginBottom: 6,
+        },
+        tabBarIconStyle: {
+          marginTop: 7,
+        },
+        tabBarStyle: {
+          height: Platform.OS === 'ios' ? 76 : 66,
+          paddingTop: 4,
+          paddingBottom: Platform.OS === 'ios' ? 18 : 8,
+          backgroundColor: theme.colors.card,
+          borderTopColor: theme.colors.border,
+          borderTopWidth: 1,
+          elevation: 8,
+          shadowColor: theme.colors.cardShadow,
+          shadowOpacity: 0.12,
+          shadowRadius: 10,
+          shadowOffset: { width: 0, height: -4 },
+        },
         tabBarIcon: ({ color, size }) => {
           let iconName: any = 'home';
           if (route.name === 'Dashboard') iconName = 'home';
