@@ -168,6 +168,16 @@ export const getAutomaticRecommendations = async (limite = 10) => {
   return response.data;
 };
 
+export const getMedicineSupportInfo = async (nombre: string) => {
+  const response = await apiNeural.get("/recomendaciones/medicamento", {
+    params: {
+      nombre,
+    },
+  });
+
+  return response.data;
+};
+
 export const runAutonomousAgentCycle = async (
   autorizarAcciones = false,
   sesionId = "app-movil",

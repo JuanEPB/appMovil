@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -21,6 +22,7 @@ import {
   getInventoryAnomalies,
   getPredictiveDashboard,
   getLowStockReportPdfUrlAsync,
+  getMedicineSupportInfo,
   runAutonomousAgentCycle,
 } from "../api/apiNeural";
 import { HeaderMenu } from "../components/HeaderMenu";
@@ -103,6 +105,9 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [medicineQuery, setMedicineQuery] = useState("");
+  const [medicineInfo, setMedicineInfo] = useState<any | null>(null);
+  const [medicineLoading, setMedicineLoading] = useState(false);
 
   const loadCenter = useCallback(async () => {
     try {
@@ -176,6 +181,29 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
   const agentActions = firstList(data.agent, ["acciones", "plan", "tareas"]).slice(0, 4);
   const predictionHistory = firstList(data.predictionHistory, ["predicciones"]).slice(0, 5);
   const actionHistory = firstList(data.actionHistory, ["acciones"]).slice(0, 5);
+
+  const handleMedicineInfo = async () => {
+    const query = medicineQuery.trim();
+    if (!query || medicineLoading) return;
+
+    try {
+      setMedicineLoading(true);
+      setMedicineInfo(await getMedicineSupportInfo(query));
+    } catch (requestError) {
+      setMedicineInfo({
+        consulta: query,
+        errores: [
+          requestError instanceof Error
+            ? requestError.message
+            : "No se pudo consultar informacion externa.",
+        ],
+        aviso_medico:
+          "Informacion solo de apoyo. Consulta a un profesional de salud.",
+      });
+    } finally {
+      setMedicineLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -314,6 +342,59 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
                 styles={styles}
               >
                 <List items={recommendations} empty="Sin recomendaciones pendientes." styles={styles} />
+              </Section>
+
+              <Section
+                icon="shield"
+                title="Info medicamento"
+                count={medicineInfo ? 1 : 0}
+                color="#2563EB"
+                styles={styles}
+              >
+                <Text style={styles.reportText}>
+                  Apoyo informativo con RxNorm/openFDA. No sustituye receta ni consejo medico.
+                </Text>
+                <View style={styles.medicineSearchRow}>
+                  <TextInput
+                    value={medicineQuery}
+                    onChangeText={setMedicineQuery}
+                    placeholder="Ej. Paracetamol"
+                    placeholderTextColor={theme.colors.textMuted}
+                    style={styles.medicineInput}
+                  />
+                  <Pressable
+                    onPress={handleMedicineInfo}
+                    disabled={!medicineQuery.trim() || medicineLoading}
+                    style={({ pressed }) => [
+                      styles.medicineButton,
+                      (!medicineQuery.trim() || medicineLoading) && styles.disabled,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    {medicineLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Feather name="search" size={16} color="#fff" />
+                    )}
+                  </Pressable>
+                </View>
+                {medicineInfo && (
+                  <View style={styles.medicineInfoBox}>
+                    <Text style={styles.agentMode}>
+                      {textOf(medicineInfo.normalizacion?.nombre_normalizado, medicineInfo.consulta)}
+                    </Text>
+                    <Text style={styles.reportText}>{medicineInfo.aviso_medico}</Text>
+                    <List
+                      items={[
+                        ...(medicineInfo.informacion?.indicaciones || []),
+                        ...(medicineInfo.informacion?.advertencias || []),
+                        ...(medicineInfo.errores || []),
+                      ]}
+                      empty="Sin informacion externa encontrada."
+                      styles={styles}
+                    />
+                  </View>
+                )}
               </Section>
 
               <Section
@@ -721,6 +802,42 @@ const getStyles = (theme: any, isPhone: boolean) =>
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
       paddingTop: 10,
+    },
+    medicineSearchRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 10,
+    },
+    medicineInput: {
+      flex: 1,
+      minHeight: 42,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.background,
+      color: theme.colors.text,
+      paddingHorizontal: 12,
+      fontSize: 14,
+    },
+    medicineButton: {
+      width: 44,
+      height: 42,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
+      backgroundColor: theme.colors.primary,
+    },
+    medicineInfoBox: {
+      marginTop: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.background,
+      padding: 10,
+    },
+    disabled: {
+      opacity: 0.55,
     },
     empty: {
       color: theme.colors.textMuted,

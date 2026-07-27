@@ -225,6 +225,20 @@ export const SettingsScreen = () => {
           </View>
         </TouchableOpacity>
 
+        <View style={[styles.card, styles.preferenceCard]}>
+          <View style={styles.cardHeader}>
+            <View style={styles.iconText}>
+              <Ionicons name="shield-checkmark" size={22} color={theme.colors.primary} />
+              <View style={styles.flex}>
+                <Text style={styles.cardTitle}>Aviso de privacidad</Text>
+                <Text style={styles.cardHint}>
+                  La app usa datos de inventario, ventas, voz transcrita y feedback para operar la IA y mejorar respuestas. Las consultas externas de medicamentos son informativas y no sustituyen indicacion medica. Evita capturar datos sensibles de pacientes.
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
         <TouchableOpacity
           style={[styles.saveButton, saving && styles.disabled]}
           onPress={handleSave}
