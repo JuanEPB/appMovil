@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -24,10 +24,17 @@ import { HeaderMenu } from "../components/HeaderMenu";
 import { FadeSlideIn as Fade } from "../components/FadeSlideIn";
 import { SuccessModal } from "../components/SuccessModal";
 import { apiPharma } from "../api/apiPharma";
-import { getSaleTicketPdfUrl } from "../api/apiNeural";
+import { getSaleTicketPdfUrlAsync } from "../api/apiNeural";
 import { useTheme } from "../context/ThemeContext";
 import { useDocuments } from "../hooks/useDocumentosHook";
 import { isDemoToken } from "../data/localDb";
+import {
+  ExportHistoryItem,
+  PharmacyProfile,
+  addExportHistoryItem,
+  getExportHistory,
+  getPharmacyProfile,
+} from "../utils/appSettings";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
 import { tw } from "../themes/tailwindTokens";
 
@@ -44,6 +51,22 @@ export const DocumentsScreen = () => {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [exportHistory, setExportHistory] = useState<ExportHistoryItem[]>([]);
+
+  useEffect(() => {
+    void refreshExportHistory();
+  }, []);
+
+  const refreshExportHistory = async () => {
+    setExportHistory(await getExportHistory());
+  };
+
+  const registerExport = async (
+    item: Omit<ExportHistoryItem, "id" | "fecha">,
+  ) => {
+    await addExportHistoryItem(item);
+    await refreshExportHistory();
+  };
 
   const handleDownload = async (id: string, filename: string) => {
     try {
@@ -66,15 +89,21 @@ export const DocumentsScreen = () => {
 
       try {
         const venta = JSON.parse(text);
+        const pharmacyProfile = await getPharmacyProfile();
 
-        if (printTicketInBrowser(venta)) {
+        if (printTicketInBrowser(venta, pharmacyProfile)) {
+          await registerExport({
+            tipo: "ticket",
+            origen: "web",
+            descripcion: `Ticket ${venta._id ?? filename}`,
+          });
           setSuccessMessage("Ticket listo para guardar como PDF.");
           setShowSuccess(true);
           return;
         }
 
         const pdf = await Print.printToFileAsync({
-          html: buildTicketHtml(venta),
+          html: buildTicketHtml(venta, pharmacyProfile),
         });
 
         if (await Sharing.isAvailableAsync()) {
@@ -85,10 +114,20 @@ export const DocumentsScreen = () => {
           setCurrentFile(pdf.uri);
         }
 
+        await registerExport({
+          tipo: "ticket",
+          origen: "local",
+          descripcion: `Ticket ${venta._id ?? filename}`,
+        });
         setSuccessMessage("Ticket convertido correctamente a PDF.");
       } catch {
         if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(res.uri, { mimeType: "application/pdf" });
         else setCurrentFile(res.uri);
+        await registerExport({
+          tipo: "reporte",
+          origen: "api",
+          descripcion: filename,
+        });
         setSuccessMessage(`Archivo ${filename} descargado correctamente.`);
       }
 
@@ -116,7 +155,7 @@ export const DocumentsScreen = () => {
 
     try {
       setDownloading(venta._id);
-      const url = getSaleTicketPdfUrl(backendVentaId);
+      const url = await getSaleTicketPdfUrlAsync(backendVentaId);
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -126,6 +165,11 @@ export const DocumentsScreen = () => {
 
       await Linking.openURL(url);
 
+      await registerExport({
+        tipo: "ticket",
+        origen: "api",
+        descripcion: `Ticket ${venta._id}`,
+      });
       setSuccessMessage("Ticket PDF abierto desde Pharma Neural V2.");
       setShowSuccess(true);
     } catch (downloadError) {
@@ -139,8 +183,14 @@ export const DocumentsScreen = () => {
   const exportLocalTicket = async (venta: any) => {
     try {
       setDownloading(venta._id);
+      const pharmacyProfile = await getPharmacyProfile();
 
-      if (printTicketInBrowser(venta)) {
+      if (printTicketInBrowser(venta, pharmacyProfile)) {
+        await registerExport({
+          tipo: "ticket",
+          origen: "web",
+          descripcion: `Ticket ${venta._id}`,
+        });
         setSuccessMessage(
           "Ticket listo para guardar como PDF desde el navegador."
         );
@@ -149,7 +199,7 @@ export const DocumentsScreen = () => {
       }
 
       const pdf = await Print.printToFileAsync({
-        html: buildTicketHtml(venta),
+        html: buildTicketHtml(venta, pharmacyProfile),
       });
 
       if (await Sharing.isAvailableAsync()) {
@@ -160,6 +210,11 @@ export const DocumentsScreen = () => {
         setCurrentFile(pdf.uri);
       }
 
+      await registerExport({
+        tipo: "ticket",
+        origen: "local",
+        descripcion: `Ticket ${venta._id}`,
+      });
       setSuccessMessage(
         "Ticket convertido correctamente a PDF desde la app."
       );
@@ -293,6 +348,19 @@ export const DocumentsScreen = () => {
             ))
           ) : (
             <EmptyText text="No hay otros documentos disponibles." />
+          )}
+        </DocumentSection>
+
+        <DocumentSection title="Actividad de exportacion">
+          {exportHistory.length ? (
+            exportHistory.slice(0, 4).map((item) => (
+              <ExportHistoryCard
+                key={item.id}
+                item={item}
+              />
+            ))
+          ) : (
+            <EmptyText text="Aun no hay exportaciones registradas." />
           )}
         </DocumentSection>
       </ScrollView>
@@ -444,7 +512,37 @@ const EmptyText = ({ text }: { text: string }) => {
   return <Text style={[styles.empty, { color: theme.colors.textMuted }]}>{text}</Text>;
 };
 
-const printTicketInBrowser = (venta: any) => {
+const ExportHistoryCard = ({ item }: { item: ExportHistoryItem }) => {
+  const { theme } = useTheme();
+  const color =
+    item.origen === "api"
+      ? theme.colors.primary
+      : item.origen === "web"
+        ? theme.colors.warning
+        : theme.colors.success;
+
+  return (
+    <View style={[styles.historyCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+      <View style={[styles.docIcon, { backgroundColor: theme.colors.background }]}>
+        <Feather name={item.tipo === "ticket" ? "printer" : "file"} size={19} color={color} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text numberOfLines={1} style={[styles.cardTitle, { color: theme.colors.text }]}>{item.descripcion}</Text>
+        <Text numberOfLines={1} style={[styles.cardText, { color: theme.colors.textMuted }]}>
+          {new Date(item.fecha).toLocaleString()}
+        </Text>
+      </View>
+      <View style={[styles.historyPill, { backgroundColor: `${color}18` }]}>
+        <Text style={[styles.historyPillText, { color }]}>{item.origen.toUpperCase()}</Text>
+      </View>
+    </View>
+  );
+};
+
+const printTicketInBrowser = (
+  venta: any,
+  pharmacyProfile: PharmacyProfile,
+) => {
   if (Platform.OS !== "web" || typeof window === "undefined") {
     return false;
   }
@@ -456,7 +554,7 @@ const printTicketInBrowser = (venta: any) => {
   }
 
   printWindow.document.open();
-  printWindow.document.write(buildTicketHtml(venta));
+  printWindow.document.write(buildTicketHtml(venta, pharmacyProfile));
   printWindow.document.close();
   printWindow.focus();
   printWindow.setTimeout(() => {
@@ -490,7 +588,10 @@ const buildTicketRows = (venta: any) =>
     })
     .join("");
 
-const buildTicketHtml = (venta: any) => `
+const buildTicketHtml = (
+  venta: any,
+  pharmacyProfile: PharmacyProfile,
+) => `
   <html>
     <head>
       <meta charset="utf-8" />
@@ -567,7 +668,7 @@ const buildTicketHtml = (venta: any) => `
         }
         .meta-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
+          grid-template-columns: 1fr 1fr;
           gap: 10px;
           margin-bottom: 22px;
         }
@@ -675,7 +776,7 @@ const buildTicketHtml = (venta: any) => `
             <div class="brand-wrap">
               <div class="mark">PC</div>
               <div>
-                <div class="brand">PharmaControl</div>
+                <div class="brand">${pharmacyProfile.nombre}</div>
                 <div class="subtitle">Comprobante profesional de venta</div>
               </div>
             </div>
@@ -695,8 +796,12 @@ const buildTicketHtml = (venta: any) => `
                 <div class="value">${venta.usuario?.nombre ?? "Cliente"} ${venta.usuario?.apellido ?? ""}</div>
               </div>
               <div class="meta">
-                <div class="label">Sistema</div>
-                <div class="value">Pharma Neural V2</div>
+                <div class="label">Farmacia</div>
+                <div class="value">${pharmacyProfile.direccion}<br/>${pharmacyProfile.telefono}</div>
+              </div>
+              <div class="meta">
+                <div class="label">Responsable</div>
+                <div class="value">${pharmacyProfile.responsable}<br/>${pharmacyProfile.identificacionFiscal}</div>
               </div>
             </div>
             <h2 class="section-title">Detalle de productos</h2>
@@ -780,6 +885,24 @@ const styles = StyleSheet.create({
   buttonRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 12 },
   button: { flex: 1, minWidth: 120, minHeight: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   buttonText: { color: "#fff", fontWeight: "800" },
+  historyCard: {
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    ...shadow("#000"),
+  },
+  historyPill: {
+    minHeight: 28,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  historyPillText: { fontSize: 11, fontWeight: "800" },
   viewerClose: {
     flexDirection: "row",
     alignItems: "center",

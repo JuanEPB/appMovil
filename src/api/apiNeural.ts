@@ -1,7 +1,8 @@
 import axios from "axios";
+import { DEFAULT_NEURAL_API_URL, getNeuralApiUrl } from "../utils/appSettings";
 
 export const PHARMA_NEURAL_URL =
-  process.env.EXPO_PUBLIC_PHARMA_NEURAL_URL || "http://127.0.0.1:8000";
+  DEFAULT_NEURAL_API_URL;
 
 export const apiNeural = axios.create({
   baseURL: PHARMA_NEURAL_URL,
@@ -10,6 +11,21 @@ export const apiNeural = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+apiNeural.interceptors.request.use(async (config) => {
+  config.baseURL = await getNeuralApiUrl();
+  return config;
+});
+
+export const getCurrentNeuralApiUrl = getNeuralApiUrl;
+
+export const checkNeuralApiStatus = async () => {
+  const response = await apiNeural.get("/perfil", {
+    timeout: 6000,
+  });
+
+  return response.data;
+};
 
 export const sendNeuralChatMessage = async (
   mensaje: string,
@@ -82,8 +98,14 @@ export const getAppProfile = async () => {
 export const getSaleTicketPdfUrl = (ventaId: string | number) =>
   `${PHARMA_NEURAL_URL}/ventas/${ventaId}/ticket.pdf`;
 
+export const getSaleTicketPdfUrlAsync = async (ventaId: string | number) =>
+  `${await getNeuralApiUrl()}/ventas/${ventaId}/ticket.pdf`;
+
 export const getLowStockReportPdfUrl = () =>
   `${PHARMA_NEURAL_URL}/inventario/alertas/reporte-bajo-stock.pdf`;
+
+export const getLowStockReportPdfUrlAsync = async () =>
+  `${await getNeuralApiUrl()}/inventario/alertas/reporte-bajo-stock.pdf`;
 
 export const getAIPredictionHistory = async (limite = 20) => {
   const response = await apiNeural.get("/perfil/ia/predicciones", {

@@ -20,7 +20,7 @@ import {
   getExecutiveReport,
   getInventoryAnomalies,
   getPredictiveDashboard,
-  getLowStockReportPdfUrl,
+  getLowStockReportPdfUrlAsync,
   runAutonomousAgentCycle,
 } from "../api/apiNeural";
 import { HeaderMenu } from "../components/HeaderMenu";
@@ -266,7 +266,10 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
                 title="PDF bajo stock"
                 text="Descargar reporte"
                 color="#2563EB"
-                onPress={() => Linking.openURL(getLowStockReportPdfUrl())}
+                onPress={async () => {
+                  const url = await getLowStockReportPdfUrlAsync();
+                  await Linking.openURL(url);
+                }}
                 styles={styles}
               />
               <QuickAction
