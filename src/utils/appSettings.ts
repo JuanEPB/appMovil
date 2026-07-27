@@ -27,8 +27,12 @@ export const DEFAULT_PHARMACY_PROFILE: PharmacyProfile = {
 export const DEFAULT_NEURAL_API_URL =
   process.env.EXPO_PUBLIC_PHARMA_NEURAL_URL || "http://127.0.0.1:8000";
 
+export const DEFAULT_PHARMA_API_URL =
+  process.env.EXPO_PUBLIC_PHARMA_API_URL || "http://127.0.0.1:8000";
+
 const PHARMACY_PROFILE_KEY = "pharma_settings_profile";
 const NEURAL_API_URL_KEY = "pharma_settings_neural_api_url";
+const PHARMA_API_URL_KEY = "pharma_settings_pharma_api_url";
 const EXPORT_HISTORY_KEY = "pharma_export_history";
 
 export const getPharmacyProfile = async (): Promise<PharmacyProfile> => {
@@ -57,6 +61,15 @@ export const getNeuralApiUrl = async () => {
 
 export const saveNeuralApiUrl = async (url: string) => {
   await AsyncStorage.setItem(NEURAL_API_URL_KEY, url.trim().replace(/\/+$/, ""));
+};
+
+export const getPharmaApiUrl = async () => {
+  const stored = await AsyncStorage.getItem(PHARMA_API_URL_KEY);
+  return (stored || DEFAULT_PHARMA_API_URL).trim().replace(/\/+$/, "");
+};
+
+export const savePharmaApiUrl = async (url: string) => {
+  await AsyncStorage.setItem(PHARMA_API_URL_KEY, url.trim().replace(/\/+$/, ""));
 };
 
 export const addExportHistoryItem = async (

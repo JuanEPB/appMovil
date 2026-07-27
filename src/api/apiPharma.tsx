@@ -1,12 +1,10 @@
 // src/api/apiPharma.ts
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
-import { navigationRef } from '../navigation/NavigationService';
-import { CommonActions } from '@react-navigation/native';
+import { DEFAULT_PHARMA_API_URL, getPharmaApiUrl } from '../utils/appSettings';
 
 export const apiPharma = axios.create({
-  baseURL: 'https://api.pharmacontrol.site',
+  baseURL: DEFAULT_PHARMA_API_URL,
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -14,6 +12,7 @@ export const apiPharma = axios.create({
 // ✅ Agregar token en cada solicitud
 apiPharma.interceptors.request.use(
   async (config) => {
+    config.baseURL = await getPharmaApiUrl();
     const token = await AsyncStorage.getItem('token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
@@ -35,6 +34,7 @@ export const registerAuthInterceptor = (handler: {
 // 🔹 Interceptor: agrega token a cada request
 apiPharma.interceptors.request.use(
   async (config) => {
+    config.baseURL = await getPharmaApiUrl();
     const token = await AsyncStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

@@ -21,7 +21,9 @@ import { useTheme } from "../context/ThemeContext";
 import {
   DEFAULT_PHARMACY_PROFILE,
   PharmacyProfile,
+  getPharmaApiUrl,
   getPharmacyProfile,
+  savePharmaApiUrl,
   saveNeuralApiUrl,
   savePharmacyProfile,
 } from "../utils/appSettings";
@@ -38,17 +40,20 @@ export const SettingsScreen = () => {
   const styles = useMemo(() => getStyles(theme, layout.isPhone), [theme, layout.isPhone]);
 
   const [apiUrl, setApiUrl] = useState("");
+  const [pharmaApiUrl, setPharmaApiUrl] = useState("");
   const [apiState, setApiState] = useState<ApiState>("idle");
   const [apiMessage, setApiMessage] = useState("Sin verificar");
   const [profile, setProfile] = useState<PharmacyProfile>(DEFAULT_PHARMACY_PROFILE);
   const [saving, setSaving] = useState(false);
 
   const loadSettings = useCallback(async () => {
-    const [storedUrl, storedProfile] = await Promise.all([
+    const [storedUrl, storedPharmaUrl, storedProfile] = await Promise.all([
       getCurrentNeuralApiUrl(),
+      getPharmaApiUrl(),
       getPharmacyProfile(),
     ]);
     setApiUrl(storedUrl);
+    setPharmaApiUrl(storedPharmaUrl);
     setProfile(storedProfile);
   }, []);
 
@@ -65,6 +70,7 @@ export const SettingsScreen = () => {
       setSaving(true);
       await Promise.all([
         saveNeuralApiUrl(apiUrl),
+        savePharmaApiUrl(pharmaApiUrl),
         savePharmacyProfile(profile),
       ]);
       Alert.alert("Listo", "Configuracion guardada para la app y los tickets.");
@@ -136,6 +142,20 @@ export const SettingsScreen = () => {
               style={styles.input}
             />
             <Text style={styles.statusText}>{apiMessage}</Text>
+
+            <Text style={styles.inputLabel}>URL datos pharmacontrol</Text>
+            <TextInput
+              value={pharmaApiUrl}
+              onChangeText={setPharmaApiUrl}
+              placeholder="http://127.0.0.1:8000"
+              placeholderTextColor={theme.colors.textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={styles.input}
+            />
+            <Text style={styles.statusText}>
+              Medicamentos y ventas se leen desde esta API.
+            </Text>
 
             <TouchableOpacity
               style={[styles.primaryButton, apiState === "checking" && styles.disabled]}
