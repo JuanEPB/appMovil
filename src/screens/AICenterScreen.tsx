@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,11 +13,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
+  getAIActionHistory,
+  getAIPredictionHistory,
   getAutomaticRecommendations,
   getAppProfile,
   getExecutiveReport,
   getInventoryAnomalies,
   getPredictiveDashboard,
+  getLowStockReportPdfUrl,
   runAutonomousAgentCycle,
 } from "../api/apiNeural";
 import { HeaderMenu } from "../components/HeaderMenu";
@@ -32,6 +36,8 @@ type ModuleState = {
   report: unknown;
   agent: unknown;
   profile: unknown;
+  predictionHistory: unknown;
+  actionHistory: unknown;
 };
 
 const asRecord = (value: unknown) =>
@@ -62,6 +68,9 @@ const textOf = (value: unknown, fallback = "Sin detalle") => {
       record.accion ??
       record.titulo ??
       record.nombre ??
+      record.medicamento_nombre ??
+      record.tipo_accion ??
+      record.tipo_prediccion ??
       fallback,
   );
 };
@@ -88,6 +97,8 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
     report: null,
     agent: null,
     profile: null,
+    predictionHistory: null,
+    actionHistory: null,
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -96,16 +107,36 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
   const loadCenter = useCallback(async () => {
     try {
       setError(null);
-      const [dashboard, recommendations, anomalies, report, agent, profile] = await Promise.all([
+      const [
+        dashboard,
+        recommendations,
+        anomalies,
+        report,
+        agent,
+        profile,
+        predictionHistory,
+        actionHistory,
+      ] = await Promise.all([
         getPredictiveDashboard(10),
         getAutomaticRecommendations(8),
         getInventoryAnomalies(100),
         getExecutiveReport(5),
         runAutonomousAgentCycle(false, "app-movil-centro-ia"),
         getAppProfile(),
+        getAIPredictionHistory(8),
+        getAIActionHistory(8),
       ]);
 
-      setData({ dashboard, recommendations, anomalies, report, agent, profile });
+      setData({
+        dashboard,
+        recommendations,
+        anomalies,
+        report,
+        agent,
+        profile,
+        predictionHistory,
+        actionHistory,
+      });
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -140,7 +171,11 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
   const profile = asRecord(data.profile);
   const iaProfile = asRecord(profile.ia);
   const iaMetrics = asRecord(iaProfile.metricas);
+  const empresa = asRecord(profile.empresa);
+  const farmacia = asRecord(profile.farmacia);
   const agentActions = firstList(data.agent, ["acciones", "plan", "tareas"]).slice(0, 4);
+  const predictionHistory = firstList(data.predictionHistory, ["predicciones"]).slice(0, 5);
+  const actionHistory = firstList(data.actionHistory, ["acciones"]).slice(0, 5);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -227,6 +262,14 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
                 styles={styles}
               />
               <QuickAction
+                icon="download"
+                title="PDF bajo stock"
+                text="Descargar reporte"
+                color="#2563EB"
+                onPress={() => Linking.openURL(getLowStockReportPdfUrl())}
+                styles={styles}
+              />
+              <QuickAction
                 icon="bar-chart-2"
                 title="Dashboard"
                 text="Predicción completa"
@@ -245,6 +288,21 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
             </View>
 
             <View style={[styles.grid, { gap: layout.gap }]}>
+              <Section
+                icon="briefcase"
+                title="Perfil conectado"
+                count={Number(Boolean(profile))}
+                color={theme.colors.primary}
+                styles={styles}
+              >
+                <Text style={styles.agentMode}>
+                  {textOf(empresa.nombre, "Empresa sin datos")} · {textOf(farmacia.nombre, "Farmacia sin datos")}
+                </Text>
+                <Text style={styles.reportText}>
+                  Feedback pendiente: {numberOf(iaMetrics, ["feedback_pendiente"])} · Memorias: {numberOf(iaMetrics, ["sesiones_con_memoria"])}
+                </Text>
+              </Section>
+
               <Section
                 icon="zap"
                 title="Recomendaciones automáticas"
@@ -291,6 +349,26 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
                     "Reporte preparado para resumir riesgos, prioridades y compras sugeridas.",
                   )}
                 </Text>
+              </Section>
+
+              <Section
+                icon="trending-up"
+                title="Historial de predicciones"
+                count={predictionHistory.length}
+                color={theme.colors.success}
+                styles={styles}
+              >
+                <List items={predictionHistory} empty="Sin predicciones guardadas." styles={styles} />
+              </Section>
+
+              <Section
+                icon="activity"
+                title="Acciones IA auditadas"
+                count={actionHistory.length}
+                color={theme.colors.warning}
+                styles={styles}
+              >
+                <List items={actionHistory} empty="Sin acciones ejecutadas o pendientes." styles={styles} />
               </Section>
             </View>
           </>

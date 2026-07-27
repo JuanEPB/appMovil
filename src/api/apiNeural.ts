@@ -85,6 +85,26 @@ export const getSaleTicketPdfUrl = (ventaId: string | number) =>
 export const getLowStockReportPdfUrl = () =>
   `${PHARMA_NEURAL_URL}/inventario/alertas/reporte-bajo-stock.pdf`;
 
+export const getAIPredictionHistory = async (limite = 20) => {
+  const response = await apiNeural.get("/perfil/ia/predicciones", {
+    params: {
+      limite,
+    },
+  });
+
+  return response.data;
+};
+
+export const getAIActionHistory = async (limite = 20) => {
+  const response = await apiNeural.get("/perfil/ia/acciones", {
+    params: {
+      limite,
+    },
+  });
+
+  return response.data;
+};
+
 export const getAutomaticRecommendations = async (limite = 10) => {
   const response = await apiNeural.get("/recomendaciones", {
     params: {
