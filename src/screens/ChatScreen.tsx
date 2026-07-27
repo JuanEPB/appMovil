@@ -11,11 +11,25 @@ import {
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import axios from "axios";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { sendNeuralChatMessage } from "../api/apiNeural";
 import { HeaderMenu } from "../components/HeaderMenu";
 import { useTheme } from "../context/ThemeContext";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
+
+const getAssistantText = (data: any) => {
+  const response = data?.respuesta;
+
+  if (typeof response === "string") {
+    return response;
+  }
+
+  if (typeof response?.respuesta === "string") {
+    return response.respuesta;
+  }
+
+  return "Solicitud procesada por la IA.";
+};
 
 export const ChatScreen = () => {
   const { theme } = useTheme();
@@ -32,8 +46,8 @@ export const ChatScreen = () => {
     setInput("");
 
     try {
-      const res = await axios.post("https://tuapi.com/api/chat", { message: text });
-      setMessages((prev) => [...prev, { role: "ai", content: res.data.response }]);
+      const data = await sendNeuralChatMessage(text);
+      setMessages((prev) => [...prev, { role: "ai", content: getAssistantText(data) }]);
     } catch {
       setMessages((prev) => [
         ...prev,
