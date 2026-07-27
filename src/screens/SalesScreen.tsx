@@ -8,7 +8,6 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HeaderMenu } from "../components/HeaderMenu";
@@ -16,7 +15,7 @@ import { SuccessModal } from "../components/SuccessModal";
 import { apiPharma } from "../api/apiPharma";
 import { syncAppSale } from "../api/apiNeural";
 import { useTheme } from "../context/ThemeContext";
-import { isDemoToken, localDb } from "../data/localDb";
+import { localDb } from "../data/localDb";
 import { Medicamento } from "../interfaces/interface";
 import { getPharmacyProfile } from "../utils/appSettings";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
@@ -40,24 +39,12 @@ export const SalesScreen = () => {
   const load = async () => {
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem("token");
-
-      if (!token || isDemoToken(token)) {
-        setConnectionMode("local");
-        setMedicamentos(await localDb.getMedicamentos());
-        return;
-      }
-
       setConnectionMode("api");
-      const response = await apiPharma.get("/api/medicamentos/all", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await apiPharma.get("/api/medicamentos/all");
       setMedicamentos(Array.isArray(response.data) ? response.data : []);
     } catch {
       setConnectionMode("local");
-      setMedicamentos(await localDb.getMedicamentos());
+      setMedicamentos([]);
     } finally {
       setLoading(false);
     }

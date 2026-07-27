@@ -1,4 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import type { Medicamento } from "../interfaces/interface";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -20,7 +19,7 @@ import { apiPharma } from "../api/apiPharma";
 import { FadeSlideIn as Fade } from "../components/FadeSlideIn";
 import { HeaderMenu } from "../components/HeaderMenu";
 import { useTheme } from "../context/ThemeContext";
-import { isDemoToken, localDb } from "../data/localDb";
+import { localDb } from "../data/localDb";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
 
 type InventoryFilter = "Todos" | "Disponible" | "Bajo stock" | "Agotado";
@@ -182,33 +181,17 @@ export const MedicamentosScreen = () => {
   const fetchMedicamentos = useCallback(async () => {
     try {
       setError(null);
-
-      const token = await AsyncStorage.getItem("token");
-
-      if (!token) {
-        throw new Error("No hay una sesión activa.");
-      }
-
-      if (isDemoToken(token)) {
-        setDataSource("local");
-        const data = await localDb.getMedicamentos();
-        setMedicamentos(Array.isArray(data) ? data : []);
-        return;
-      }
-
       setDataSource("api");
-      const response = await apiPharma.get("/api/medicamentos/all", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
 
+      const response = await apiPharma.get("/api/medicamentos/all");
       setMedicamentos(Array.isArray(response.data) ? response.data : []);
     } catch (requestError) {
+      setDataSource("local");
+      setMedicamentos([]);
       setError(
         requestError instanceof Error
           ? requestError.message
-          : "No se pudieron cargar los medicamentos.",
+          : "No se pudo conectar con la API de pharmacontrol.",
       );
     } finally {
       setLoading(false);
