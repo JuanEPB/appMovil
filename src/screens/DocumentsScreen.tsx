@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -23,6 +24,7 @@ import { HeaderMenu } from "../components/HeaderMenu";
 import { FadeSlideIn as Fade } from "../components/FadeSlideIn";
 import { SuccessModal } from "../components/SuccessModal";
 import { apiPharma } from "../api/apiPharma";
+import { getSaleTicketPdfUrl } from "../api/apiNeural";
 import { useTheme } from "../context/ThemeContext";
 import { useDocuments } from "../hooks/useDocumentosHook";
 import { isDemoToken } from "../data/localDb";
@@ -75,6 +77,62 @@ export const DocumentsScreen = () => {
       setShowSuccess(true);
     } catch (downloadError) {
       console.error("Error al generar PDF:", downloadError);
+      Alert.alert("Error", "No se pudo generar el PDF");
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const getBackendVentaId = (id: string) => {
+    const match = String(id || "").match(/\d+$/);
+    return match ? match[0] : null;
+  };
+
+  const handleExportVenta = async (venta: any) => {
+    const backendVentaId = getBackendVentaId(venta?._id);
+
+    if (!backendVentaId || String(venta?._id || "").includes("demo")) {
+      await exportLocalTicket(venta);
+      return;
+    }
+
+    try {
+      setDownloading(venta._id);
+      const url = getSaleTicketPdfUrl(backendVentaId);
+
+      await Linking.openURL(url);
+
+      setSuccessMessage("Ticket PDF abierto desde Pharma Neural V2.");
+      setShowSuccess(true);
+    } catch (downloadError) {
+      console.error("Error al abrir PDF del backend:", downloadError);
+      await exportLocalTicket(venta);
+    } finally {
+      setDownloading(null);
+    }
+  };
+
+  const exportLocalTicket = async (venta: any) => {
+    try {
+      setDownloading(venta._id);
+      const pdf = await Print.printToFileAsync({
+        html: buildTicketHtml(venta),
+      });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(pdf.uri, {
+          mimeType: "application/pdf",
+        });
+      } else {
+        setCurrentFile(pdf.uri);
+      }
+
+      setSuccessMessage(
+        "Ticket convertido correctamente a PDF desde la app."
+      );
+      setShowSuccess(true);
+    } catch (downloadError) {
+      console.error("Error al generar PDF local:", downloadError);
       Alert.alert("Error", "No se pudo generar el PDF");
     } finally {
       setDownloading(null);
@@ -156,7 +214,7 @@ export const DocumentsScreen = () => {
                 primaryLabel="Ver ticket"
                 onPrimary={() => setSelectedVenta(venta)}
                 secondaryLabel="Exportar"
-                onSecondary={() => handleDownload(venta._id, `venta_${venta._id}.pdf`)}
+                onSecondary={() => handleExportVenta(venta)}
                 loading={downloading === venta._id}
               />
             ))

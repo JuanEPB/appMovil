@@ -73,6 +73,18 @@ export const getLowStockReport = async (limite = 100) => {
   return response.data;
 };
 
+export const getAppProfile = async () => {
+  const response = await apiNeural.get("/perfil");
+
+  return response.data;
+};
+
+export const getSaleTicketPdfUrl = (ventaId: string | number) =>
+  `${PHARMA_NEURAL_URL}/ventas/${ventaId}/ticket.pdf`;
+
+export const getLowStockReportPdfUrl = () =>
+  `${PHARMA_NEURAL_URL}/inventario/alertas/reporte-bajo-stock.pdf`;
+
 export const getAutomaticRecommendations = async (limite = 10) => {
   const response = await apiNeural.get("/recomendaciones", {
     params: {

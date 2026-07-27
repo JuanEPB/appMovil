@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   getAutomaticRecommendations,
+  getAppProfile,
   getExecutiveReport,
   getInventoryAnomalies,
   getPredictiveDashboard,
@@ -30,6 +31,7 @@ type ModuleState = {
   anomalies: unknown;
   report: unknown;
   agent: unknown;
+  profile: unknown;
 };
 
 const asRecord = (value: unknown) =>
@@ -85,6 +87,7 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
     anomalies: null,
     report: null,
     agent: null,
+    profile: null,
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -93,15 +96,16 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
   const loadCenter = useCallback(async () => {
     try {
       setError(null);
-      const [dashboard, recommendations, anomalies, report, agent] = await Promise.all([
+      const [dashboard, recommendations, anomalies, report, agent, profile] = await Promise.all([
         getPredictiveDashboard(10),
         getAutomaticRecommendations(8),
         getInventoryAnomalies(100),
         getExecutiveReport(5),
         runAutonomousAgentCycle(false, "app-movil-centro-ia"),
+        getAppProfile(),
       ]);
 
-      setData({ dashboard, recommendations, anomalies, report, agent });
+      setData({ dashboard, recommendations, anomalies, report, agent, profile });
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -133,6 +137,9 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
   const anomalies = firstList(data.anomalies, ["anomalias", "items", "alertas"]).slice(0, 5);
   const report = asRecord(data.report);
   const agent = asRecord(data.agent);
+  const profile = asRecord(data.profile);
+  const iaProfile = asRecord(profile.ia);
+  const iaMetrics = asRecord(iaProfile.metricas);
   const agentActions = firstList(data.agent, ["acciones", "plan", "tareas"]).slice(0, 4);
 
   return (
@@ -203,6 +210,14 @@ export const AICenterScreen = ({ navigation }: { navigation: any }) => {
             </View>
 
             <View style={[styles.quickGrid, { gap: layout.gap }]}>
+              <QuickAction
+                icon="zap"
+                title="IA rápida"
+                text={`${numberOf(iaMetrics, ["predicciones_guardadas"])} predicciones guardadas`}
+                color={theme.colors.success}
+                onPress={handleRefresh}
+                styles={styles}
+              />
               <QuickAction
                 icon="message-circle"
                 title="Chat IA"
