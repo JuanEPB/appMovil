@@ -41,6 +41,8 @@ type ChatMessage = {
 
 const SESSION_ID = "app-movil";
 
+declare const window: any;
+
 const QUICK_PROMPTS: ChatOption[] = [
   {
     id: "compras",
@@ -112,6 +114,8 @@ export const ChatScreen = () => {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [loading, setLoading] = useState(false);
   const [voiceLoading, setVoiceLoading] = useState(false);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   const scrollToEnd = () => {
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
@@ -236,6 +240,134 @@ export const ChatScreen = () => {
     }
   };
 
+  const startVoiceRecognition = () => {
+    if (Platform.OS !== "web" || typeof window === "undefined") {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `voice-native-${Date.now()}`,
+          role: "ai",
+          content:
+            "El reconocimiento por micrófono directo está disponible en navegador. En app nativa falta agregar permisos y módulo de audio.",
+        },
+      ]);
+      return;
+    }
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `voice-unsupported-${Date.now()}`,
+          role: "ai",
+          content:
+            "Este navegador no permite reconocimiento de voz. Prueba Chrome o Edge.",
+        },
+      ]);
+      return;
+    }
+
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      setListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "es-MX";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    recognition.onstart = () => {
+      setListening(true);
+      setVoiceInput("");
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0]?.transcript || "")
+        .join(" ")
+        .trim();
+
+      setVoiceInput(transcript);
+
+      const lastResult = event.results[event.results.length - 1];
+      if (lastResult?.isFinal && transcript) {
+        recognition.stop();
+        void sendVoiceTranscriptToAi(transcript);
+      }
+    };
+
+    recognition.onerror = () => {
+      setListening(false);
+      recognitionRef.current = null;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `voice-recognition-error-${Date.now()}`,
+          role: "ai",
+          content:
+            "No pude escuchar el micrófono. Revisa permisos del navegador.",
+        },
+      ]);
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const sendVoiceTranscriptToAi = async (transcript: string) => {
+    const cleanTranscript = transcript.trim();
+    if (!cleanTranscript || loading || voiceLoading) return;
+
+    const userMessage: ChatMessage = {
+      id: `voice-user-${Date.now()}`,
+      role: "user",
+      content: `Voz: ${cleanTranscript}`,
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setVoiceLoading(true);
+    scrollToEnd();
+
+    try {
+      const data = await sendVoiceTranscript(cleanTranscript, "app-movil-voz");
+      const assistantMessage: ChatMessage = {
+        id: `voice-ai-${Date.now()}`,
+        role: "ai",
+        content: data?.respuesta_texto || getAssistantText(data?.resultado || data),
+        sourceMessage: cleanTranscript,
+        intent: getIntent(data?.resultado || data),
+        options: getAssistantOptions(data?.resultado || data),
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `voice-error-${Date.now()}`,
+          role: "ai",
+          content:
+            "Escuché la voz, pero no pude enviar la transcripción a la IA.",
+          sourceMessage: cleanTranscript,
+        },
+      ]);
+    } finally {
+      setVoiceLoading(false);
+      setVoiceInput("");
+      scrollToEnd();
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <HeaderMenu />
@@ -281,7 +413,7 @@ export const ChatScreen = () => {
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={styles.voiceTitle}>Modo voz</Text>
-                <Text style={styles.voiceHint}>Escribe la transcripcion y la IA la procesa como comando hablado.</Text>
+                <Text style={styles.voiceHint}>Toca el micrófono, habla y la IA procesa tu pedido.</Text>
               </View>
             </View>
             <View style={styles.voiceInputRow}>
@@ -296,17 +428,29 @@ export const ChatScreen = () => {
               <Pressable
                 style={({ pressed }) => [
                   styles.voiceButton,
+                  listening && styles.voiceButtonListening,
+                  (voiceLoading || loading) && styles.sendDisabled,
+                  pressed && styles.pressed,
+                ]}
+                disabled={voiceLoading || loading}
+                onPress={startVoiceRecognition}
+              >
+                {voiceLoading || listening ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Feather name="mic" size={17} color="#fff" />
+                )}
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.voiceSendButton,
                   (!voiceInput.trim() || voiceLoading || loading) && styles.sendDisabled,
                   pressed && styles.pressed,
                 ]}
                 disabled={!voiceInput.trim() || voiceLoading || loading}
                 onPress={sendVoiceMessage}
               >
-                {voiceLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Feather name="radio" size={17} color="#fff" />
-                )}
+                <Feather name="send" size={16} color="#fff" />
               </Pressable>
             </View>
           </View>
@@ -547,6 +691,17 @@ const getStyles = (theme: any, isPhone: boolean) =>
       justifyContent: "center",
       borderRadius: 8,
       backgroundColor: theme.colors.primary,
+    },
+    voiceButtonListening: {
+      backgroundColor: theme.colors.danger,
+    },
+    voiceSendButton: {
+      width: 44,
+      height: 42,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
+      backgroundColor: theme.colors.success,
     },
     messages: {
       flexGrow: 1,
