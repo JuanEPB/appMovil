@@ -31,23 +31,52 @@ const getAssistantText = (data: any) => {
   return "Solicitud procesada por la IA.";
 };
 
+const getAssistantOptions = (data: any) => {
+  const options = data?.opciones || data?.contexto?.opciones;
+
+  if (!Array.isArray(options)) {
+    return [];
+  }
+
+  return options
+    .filter((option) => option?.texto && option?.mensaje_sugerido)
+    .map((option) => ({
+      id: String(option.id || option.mensaje_sugerido),
+      text: String(option.texto),
+      message: String(option.mensaje_sugerido),
+    }));
+};
+
 export const ChatScreen = () => {
   const { theme } = useTheme();
   const { width } = useWindowDimensions();
   const layout = getLayout(width);
   const styles = useMemo(() => getStyles(theme, layout.isPhone), [theme, layout.isPhone]);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
+  const [messages, setMessages] = useState<{
+    role: string;
+    content: string;
+    options?: { id: string; text: string; message: string }[];
+  }[]>([]);
 
-  const sendMessage = async () => {
-    const text = input.trim();
+  const sendMessage = async (message?: string) => {
+    const text = (message ?? input).trim();
     if (!text) return;
     setMessages((prev) => [...prev, { role: "user", content: text }]);
-    setInput("");
+    if (!message) {
+      setInput("");
+    }
 
     try {
       const data = await sendNeuralChatMessage(text);
-      setMessages((prev) => [...prev, { role: "ai", content: getAssistantText(data) }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "ai",
+          content: getAssistantText(data),
+          options: getAssistantOptions(data),
+        },
+      ]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -91,6 +120,20 @@ export const ChatScreen = () => {
               return (
                 <View style={[styles.message, isUser ? styles.userMsg : styles.aiMsg]}>
                   <Text style={[styles.messageText, isUser && styles.userText]}>{item.content}</Text>
+                  {!isUser && item.options && item.options.length > 0 && (
+                    <View style={styles.optionsWrap}>
+                      {item.options.map((option) => (
+                        <TouchableOpacity
+                          key={option.id}
+                          style={styles.optionChip}
+                          activeOpacity={0.85}
+                          onPress={() => sendMessage(option.message)}
+                        >
+                          <Text style={styles.optionText}>{option.text}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
                 </View>
               );
             }}
@@ -105,7 +148,7 @@ export const ChatScreen = () => {
               onChangeText={setInput}
               multiline
             />
-            <TouchableOpacity style={styles.sendBtn} onPress={sendMessage} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.sendBtn} onPress={() => sendMessage()} activeOpacity={0.85}>
               <Feather name="send" size={19} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -180,6 +223,25 @@ const getStyles = (theme: any, isPhone: boolean) =>
     },
     messageText: { color: theme.colors.text, fontSize: 15, lineHeight: 21 },
     userText: { color: "#fff" },
+    optionsWrap: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginTop: 10,
+    },
+    optionChip: {
+      borderWidth: 1,
+      borderColor: theme.colors.primary,
+      backgroundColor: theme.colors.background,
+      borderRadius: 999,
+      paddingHorizontal: 11,
+      paddingVertical: 7,
+    },
+    optionText: {
+      color: theme.colors.primary,
+      fontSize: 12,
+      fontWeight: "700",
+    },
     inputRow: {
       flexDirection: "row",
       alignItems: "flex-end",
