@@ -101,3 +101,28 @@ export const sendLearningFeedback = async ({
 
   return response.data;
 };
+
+export const getLearningEvents = async (
+  estado = "pendiente_revision",
+  limite = 100,
+) => {
+  const response = await apiNeural.get("/aprendizaje/eventos", {
+    params: {
+      estado,
+      limite,
+    },
+  });
+
+  return response.data;
+};
+
+export const reviewLearningEvent = async (
+  eventId: string,
+  estado: "aprobado_para_entrenamiento" | "rechazado" | "pendiente_revision",
+) => {
+  const response = await apiNeural.patch(`/aprendizaje/eventos/${eventId}`, {
+    estado,
+  });
+
+  return response.data;
+};

@@ -12,6 +12,7 @@ import { shadow } from "../utils/responsive";
 const navItems = [
   { icon: "home-outline", label: "Inicio", route: "Dashboard", color: "#1D4ED8" },
   { icon: "sparkles-outline", label: "Centro IA", route: "AICenter", color: "#0891B2" },
+  { icon: "school-outline", label: "Aprendizaje IA", route: "LearningReview", color: "#16A34A" },
   { icon: "analytics-outline", label: "Dashboard IA", route: "PredictiveDashboard", color: "#7C3AED" },
   { icon: "medkit-outline", label: "Medicamentos", route: "Medicamentos", color: "#00897B" },
   { icon: "cart-outline", label: "Ventas", route: "Sales", color: "#0EA5E9" },
