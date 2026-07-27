@@ -53,6 +53,26 @@ export const getInventoryAnomalies = async (limite = 100) => {
   return response.data;
 };
 
+export const getInventoryAlerts = async (limite = 100) => {
+  const response = await apiNeural.get("/inventario/alertas", {
+    params: {
+      limite,
+    },
+  });
+
+  return response.data;
+};
+
+export const getLowStockReport = async (limite = 100) => {
+  const response = await apiNeural.get("/inventario/alertas/reporte-bajo-stock", {
+    params: {
+      limite,
+    },
+  });
+
+  return response.data;
+};
+
 export const getAutomaticRecommendations = async (limite = 10) => {
   const response = await apiNeural.get("/recomendaciones", {
     params: {
