@@ -47,6 +47,19 @@ const getText = (value: unknown, fallback = "Sin dato") => {
   return fallback;
 };
 
+const getRecord = (value: unknown) =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+const getAlertTone = (state: unknown): "danger" | "warning" | "primary" => {
+  const normalized = String(state || "").toUpperCase();
+
+  if (["CADUCADO", "AGOTADO"].includes(normalized)) return "danger";
+  if (["CRITICO", "PRECAUCION", "PROXIMO_A_CADUCAR"].includes(normalized)) return "warning";
+  return "primary";
+};
+
 const formatLabel = (value: string) =>
   value
     .replace(/_/g, " ")
@@ -203,7 +216,7 @@ export const PredictiveDashboardScreen = () => {
 
               <SectionCard icon="alert-triangle" title="Alertas" styles={styles}>
                 {alerts.length ? (
-                  alerts.map((item, index) => <InsightRow key={index} item={item} styles={styles} tone="warning" />)
+                  alerts.map((item, index) => <AlertBanner key={index} item={item} styles={styles} />)
                 ) : (
                   <EmptyText styles={styles} text="Sin alertas activas." />
                 )}
@@ -292,6 +305,57 @@ const InsightRow = ({
     <View style={styles.insightRow}>
       <View style={[styles.insightDot, { backgroundColor: color }]} />
       <Text style={styles.insightText}>{getText(item)}</Text>
+    </View>
+  );
+};
+
+const AlertBanner = ({
+  item,
+  styles,
+}: {
+  item: unknown;
+  styles: ReturnType<typeof getStyles>;
+}) => {
+  const { theme } = useTheme();
+  const record = getRecord(item);
+  const tone = getAlertTone(record.estado);
+  const color = theme.colors[tone] ?? theme.colors.warning;
+  const title = String(record.nombre || record.medicamento || "Alerta de inventario");
+  const status = String(record.estado || "ALERTA");
+  const stock = Number(record.stock ?? 0);
+  const minimum = Number(record.stock_minimo ?? 0);
+  const quantity = Number(record.cantidad_recomendada ?? 0);
+
+  return (
+    <View style={[styles.alertBanner, { borderLeftColor: color, backgroundColor: withOpacity(color, 0.08) }]}>
+      <View style={[styles.alertIcon, { backgroundColor: withOpacity(color, 0.14) }]}>
+        <Feather name="alert-triangle" size={16} color={color} />
+      </View>
+
+      <View style={styles.alertCopy}>
+        <View style={styles.alertHeader}>
+          <Text numberOfLines={1} style={[styles.alertStatus, { color }]}>
+            {status}
+          </Text>
+          {(stock || minimum || quantity) > 0 && (
+            <Text style={styles.alertMeta}>
+              Stock {stock} / mín. {minimum}
+            </Text>
+          )}
+        </View>
+
+        <Text style={styles.alertTitle}>{title}</Text>
+
+        <Text style={styles.alertText}>
+          {getText(record.recomendacion || item, "Revisar esta alerta.")}
+        </Text>
+
+        {quantity > 0 && (
+          <Text style={[styles.alertAction, { color }]}>
+            Comprar sugerido: {quantity} unidades
+          </Text>
+        )}
+      </View>
     </View>
   );
 };
@@ -562,6 +626,61 @@ const getStyles = (theme: any, isPhone: boolean) =>
       color: theme.colors.text,
       fontSize: 13,
       lineHeight: 19,
+    },
+    alertBanner: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 10,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderLeftWidth: 4,
+      borderColor: theme.colors.border,
+      padding: 11,
+      marginTop: 8,
+    },
+    alertIcon: {
+      width: 34,
+      height: 34,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
+    },
+    alertCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    alertHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 8,
+      marginBottom: 3,
+    },
+    alertStatus: {
+      fontSize: 11,
+      fontWeight: "800",
+    },
+    alertMeta: {
+      color: theme.colors.textMuted,
+      fontSize: 11,
+      fontWeight: "600",
+    },
+    alertTitle: {
+      color: theme.colors.text,
+      fontSize: 14,
+      lineHeight: 19,
+      fontWeight: "700",
+    },
+    alertText: {
+      color: theme.colors.text,
+      fontSize: 13,
+      lineHeight: 18,
+      marginTop: 4,
+    },
+    alertAction: {
+      fontSize: 12,
+      fontWeight: "800",
+      marginTop: 6,
     },
     emptyText: {
       color: theme.colors.textMuted,
