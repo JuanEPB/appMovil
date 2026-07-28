@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   Image,
   KeyboardAvoidingView,
@@ -95,6 +96,14 @@ export const LoginScreen = () => {
   const handleLogin = async () => {
     if (!email.trim() || !password.trim() || isLoading) return;
     await login?.({ email: email.trim(), contraseña: password });
+  };
+
+  const handleForgotPassword = () => {
+    Alert.alert(
+      "Recuperar contraseña",
+      "Solicita al administrador que restablezca tu contraseña para poder ingresar nuevamente.",
+      [{ text: "Entendido" }],
+    );
   };
 
   const canSubmit = email.trim().length > 0 && password.trim().length > 0 && !isLoading;
@@ -298,7 +307,7 @@ export const LoginScreen = () => {
               <View style={styles.fieldGroup}>
                 <View style={styles.labelRow}>
                   <Text style={styles.label}>Contraseña</Text>
-                  <TouchableOpacity activeOpacity={0.72}>
+                  <TouchableOpacity activeOpacity={0.72} onPress={handleForgotPassword}>
                     <Text style={styles.recoveryText}>¿La olvidaste?</Text>
                   </TouchableOpacity>
                 </View>
