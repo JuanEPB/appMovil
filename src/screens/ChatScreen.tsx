@@ -38,6 +38,7 @@ type ChatMessage = {
   intent?: string;
   options?: ChatOption[];
   feedback?: "up" | "down";
+  medicineInfo?: any;
 };
 
 const SESSION_ID = "app-movil";
@@ -172,6 +173,102 @@ const formatMedicineSupportText = (info: any) => {
   return lines.join("\n\n");
 };
 
+const MedicineSupportCard = ({
+  info,
+  styles,
+  theme,
+}: {
+  info: any;
+  styles: ReturnType<typeof getStyles>;
+  theme: any;
+}) => {
+  const local = info?.medicamento_local || {};
+  const recommendations = [
+    ...(info?.informacion?.indicaciones || []),
+    ...(info?.informacion?.advertencias || []),
+    ...(info?.informacion?.no_usar_en || []),
+    ...(info?.recomendaciones_seguras || []),
+  ].filter(Boolean);
+  const errors = (info?.errores || []).filter(Boolean);
+
+  return (
+    <View style={styles.medicineCard}>
+      <View style={styles.medicineHeader}>
+        <View style={styles.medicineIcon}>
+          <Feather name="shield" size={16} color={theme.colors.primary} />
+        </View>
+        <View style={styles.flex}>
+          <Text style={styles.medicineEyebrow}>Consulta de medicamento</Text>
+          <Text style={styles.medicineName}>
+            {local?.nombre || info?.normalizacion?.nombre_normalizado || info?.consulta}
+          </Text>
+        </View>
+      </View>
+
+      {info?.mensaje_usuario ? (
+        <Text style={styles.medicineMessage}>{info.mensaje_usuario}</Text>
+      ) : null}
+
+      {local?.nombre ? (
+        <View style={styles.medicineMetrics}>
+          <Metric label="Stock" value={String(local.stock ?? 0)} styles={styles} />
+          <Metric
+            label="Precio"
+            value={`$${Number(local.precio || 0).toFixed(2)}`}
+            styles={styles}
+          />
+          <Metric label="Lote" value={String(local.lote || "Sin lote")} styles={styles} />
+          <Metric
+            label="Caducidad"
+            value={String(local.caducidad || "Sin fecha")}
+            styles={styles}
+          />
+        </View>
+      ) : null}
+
+      {recommendations.length > 0 ? (
+        <View style={styles.medicineSection}>
+          <Text style={styles.medicineSectionTitle}>Recomendaciones</Text>
+          {recommendations.slice(0, 5).map((item: string, index: number) => (
+            <View key={`${item}-${index}`} style={styles.medicineBullet}>
+              <View style={styles.medicineDot} />
+              <Text style={styles.medicineBulletText}>{item}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {errors.length > 0 ? (
+        <View style={styles.medicineSection}>
+          <Text style={styles.medicineSectionTitle}>Avisos tecnicos</Text>
+          {errors.map((item: string, index: number) => (
+            <Text key={`${item}-${index}`} style={styles.medicineError}>
+              {item}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+
+      <Text style={styles.medicineDisclaimer}>{info?.aviso_medico}</Text>
+    </View>
+  );
+};
+
+const Metric = ({
+  label,
+  value,
+  styles,
+}: {
+  label: string;
+  value: string;
+  styles: ReturnType<typeof getStyles>;
+}) => (
+  <View style={styles.metricBox}>
+    <Text style={styles.metricLabel}>{label}</Text>
+    <Text style={styles.metricValue}>{value}</Text>
+  </View>
+);
+
 export const ChatScreen = () => {
   const { theme } = useTheme();
   const { width } = useWindowDimensions();
@@ -218,6 +315,7 @@ export const ChatScreen = () => {
         sourceMessage: text,
         intent: medicineName ? "consulta_medicamento" : getIntent(data),
         options: medicineName ? [] : getAssistantOptions(data),
+        medicineInfo: medicineName ? data : undefined,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -299,6 +397,7 @@ export const ChatScreen = () => {
         sourceMessage: transcript,
         intent: medicineName ? "consulta_medicamento" : getIntent(data?.resultado || data),
         options: medicineName ? [] : getAssistantOptions(data?.resultado || data),
+        medicineInfo: medicineName ? data : undefined,
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch {
@@ -431,6 +530,7 @@ export const ChatScreen = () => {
         sourceMessage: cleanTranscript,
         intent: medicineName ? "consulta_medicamento" : getIntent(data?.resultado || data),
         options: medicineName ? [] : getAssistantOptions(data?.resultado || data),
+        medicineInfo: medicineName ? data : undefined,
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch {
@@ -554,9 +654,17 @@ export const ChatScreen = () => {
                     </View>
                   )}
                   <View style={[styles.message, isUser ? styles.userMsg : styles.aiMsg]}>
-                    <Text style={[styles.messageText, isUser && styles.userText]}>
-                      {item.content}
-                    </Text>
+                    {item.medicineInfo ? (
+                      <MedicineSupportCard
+                        info={item.medicineInfo}
+                        styles={styles}
+                        theme={theme}
+                      />
+                    ) : (
+                      <Text style={[styles.messageText, isUser && styles.userText]}>
+                        {item.content}
+                      </Text>
+                    )}
 
                     {!isUser && item.options && item.options.length > 0 && (
                       <View style={styles.optionsWrap}>
@@ -668,6 +776,10 @@ const getStyles = (theme: any, isPhone: boolean) =>
       width: "100%",
       paddingTop: 16,
       paddingBottom: 12,
+    },
+    flex: {
+      flex: 1,
+      minWidth: 0,
     },
     header: {
       flexDirection: "row",
@@ -830,6 +942,114 @@ const getStyles = (theme: any, isPhone: boolean) =>
     },
     messageText: { color: theme.colors.text, fontSize: 15, lineHeight: 21 },
     userText: { color: "#fff" },
+    medicineCard: {
+      gap: 10,
+      minWidth: isPhone ? 250 : 360,
+    },
+    medicineHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    medicineIcon: {
+      width: 36,
+      height: 36,
+      alignItems: "center",
+      justifyContent: "center",
+      borderRadius: 8,
+      backgroundColor: theme.colors.background,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    medicineEyebrow: {
+      color: theme.colors.primary,
+      fontSize: 11,
+      fontWeight: "800",
+      textTransform: "uppercase",
+    },
+    medicineName: {
+      color: theme.colors.text,
+      fontSize: isPhone ? 16 : 18,
+      lineHeight: isPhone ? 21 : 23,
+      fontWeight: "800",
+      marginTop: 2,
+    },
+    medicineMessage: {
+      color: theme.colors.textMuted,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    medicineMetrics: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    metricBox: {
+      flexGrow: 1,
+      flexBasis: isPhone ? "45%" : "22%",
+      minWidth: isPhone ? 112 : 120,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.background,
+      paddingHorizontal: 10,
+      paddingVertical: 9,
+    },
+    metricLabel: {
+      color: theme.colors.textMuted,
+      fontSize: 11,
+      fontWeight: "700",
+      textTransform: "uppercase",
+    },
+    metricValue: {
+      color: theme.colors.text,
+      fontSize: 14,
+      lineHeight: 18,
+      fontWeight: "800",
+      marginTop: 3,
+    },
+    medicineSection: {
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      paddingTop: 10,
+      gap: 7,
+    },
+    medicineSectionTitle: {
+      color: theme.colors.text,
+      fontSize: 13,
+      fontWeight: "800",
+    },
+    medicineBullet: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 8,
+    },
+    medicineDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      marginTop: 6,
+      backgroundColor: theme.colors.success,
+    },
+    medicineBulletText: {
+      flex: 1,
+      color: theme.colors.text,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    medicineError: {
+      color: theme.colors.warning,
+      fontSize: 12,
+      lineHeight: 18,
+    },
+    medicineDisclaimer: {
+      color: theme.colors.textMuted,
+      fontSize: 12,
+      lineHeight: 18,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+      paddingTop: 9,
+    },
     optionsWrap: {
       flexDirection: "row",
       flexWrap: "wrap",
