@@ -29,6 +29,13 @@ type AlertItem = {
   estado?: string;
   stock?: number;
   stock_minimo?: number;
+
+
+
+
+
+
+  
   cantidad_recomendada?: number;
   dias_para_caducar?: number;
   recomendacion?: string;

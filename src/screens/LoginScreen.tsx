@@ -164,10 +164,6 @@ export const LoginScreen = () => {
             </View>
 
             <View style={styles.heroBlock}>
-              <View style={styles.eyebrow}>
-                <Feather name="shield" size={14} color="#14B8A6" />
-                <Text style={styles.eyebrowText}>ACCESO SEGURO</Text>
-              </View>
 
               <Text style={styles.heroTitle}>Control inteligente para una farmacia más ágil.</Text>
 
