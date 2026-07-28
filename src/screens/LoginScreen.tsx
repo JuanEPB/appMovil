@@ -29,24 +29,24 @@ export const LoginScreen = () => {
   const styles = useMemo(() => getStyles(theme, layout.isPhone), [theme, layout.isPhone]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const headerAnim = useRef(new Animated.Value(0)).current;
-  const formAnim = useRef(new Animated.Value(0)).current;
+  const logoAnim = useRef(new Animated.Value(0)).current;
+  const panelAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.stagger(120, [
-      Animated.timing(headerAnim, {
+    Animated.stagger(110, [
+      Animated.timing(logoAnim, {
         toValue: 1,
-        duration: 520,
+        duration: 480,
         useNativeDriver: true,
       }),
-      Animated.spring(formAnim, {
+      Animated.spring(panelAnim, {
         toValue: 1,
-        friction: 8,
-        tension: 60,
+        friction: 9,
+        tension: 58,
         useNativeDriver: true,
       }),
     ]).start();
-  }, [formAnim, headerAnim]);
+  }, [logoAnim, panelAnim]);
 
   const handleLogin = async () => {
     await login?.({ email, contraseña: password });
@@ -58,16 +58,10 @@ export const LoginScreen = () => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <LinearGradient
-        colors={theme.dark ? ["#07120F", "#0F1F1A", "#101827"] : ["#F8FAF9", "#EEF7F2", "#FFFFFF"]}
+        colors={theme.dark ? ["#06121A", "#0A1F25", "#0F172A"] : ["#F6FAFB", "#EDF7F6", "#F7FBFF"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
-      />
-      <LinearGradient
-        colors={theme.dark ? ["#0F766E", "#16A34A"] : ["#0F766E", "#22C55E"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.topAccent}
       />
 
       <ScrollView
@@ -77,130 +71,142 @@ export const LoginScreen = () => {
           styles.content,
           {
             paddingHorizontal: layout.pagePadding,
-            paddingVertical: layout.isPhone ? 26 : 46,
+            paddingVertical: layout.isPhone ? 24 : 46,
           },
         ]}
       >
         <View style={styles.shell}>
           <Animated.View
             style={[
-              styles.brandHeader,
+              styles.logoArea,
               {
-                opacity: headerAnim,
+                opacity: logoAnim,
                 transform: [
                   {
-                    translateY: headerAnim.interpolate({
+                    translateY: logoAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [18, 0],
+                      outputRange: [16, 0],
                     }),
                   },
                 ],
               },
             ]}
           >
-            <View style={styles.logoBox}>
-              <Image source={require("../../assets/logo1.png")} style={styles.logo} />
-            </View>
-            <Text style={styles.appSubtitle}>Gestion profesional para tu farmacia</Text>
+            <Image source={require("../../assets/logo1.png")} style={styles.logo} />
+            <Text style={styles.appSubtitle}>Plataforma clinica para farmacia inteligente</Text>
           </Animated.View>
 
           <Animated.View
             style={[
-              styles.card,
+              styles.panel,
               {
-                opacity: formAnim,
+                opacity: panelAnim,
                 transform: [
                   {
-                    translateY: formAnim.interpolate({
+                    translateY: panelAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [26, 0],
+                      outputRange: [24, 0],
                     }),
                   },
                   {
-                    scale: formAnim.interpolate({
+                    scale: panelAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [0.97, 1],
+                      outputRange: [0.98, 1],
                     }),
                   },
                 ],
               },
             ]}
           >
-            <View style={styles.cardHeader}>
-              <View style={styles.iconBadge}>
-                <Feather name="shield" size={18} color="#FFFFFF" />
-              </View>
-              <Text style={styles.title}>Bienvenida</Text>
-              <Text style={styles.subtitle}>Ingresa tus datos para entrar al panel.</Text>
-            </View>
-
-            <View style={styles.form}>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Correo electronico</Text>
-                <View style={styles.inputWrap}>
-                  <Feather name="mail" size={18} color={theme.colors.textMuted} />
-                  <TextInput
-                    placeholder="usuario@farmacia.com"
-                    placeholderTextColor={theme.colors.textMuted}
-                    value={email}
-                    onChangeText={setEmail}
-                    style={styles.input}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                  />
-                </View>
-              </View>
-
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Contrasena</Text>
-                <View style={styles.inputWrap}>
-                  <Feather name="lock" size={18} color={theme.colors.textMuted} />
-                  <TextInput
-                    placeholder="Ingresa tu contrasena"
-                    placeholderTextColor={theme.colors.textMuted}
-                    value={password}
-                    onChangeText={setPassword}
-                    style={styles.input}
-                    secureTextEntry
-                  />
-                </View>
-              </View>
-            </View>
-
-            <TouchableOpacity activeOpacity={0.75} style={styles.recoveryButton}>
-              <Text style={styles.recoveryText}>Olvidaste tu contrasena?</Text>
-            </TouchableOpacity>
-
-            <Pressable
-              disabled={isLoading}
-              onPress={handleLogin}
-              style={({ pressed }) => [
-                styles.loginButton,
-                isLoading && styles.disabled,
-                pressed && styles.buttonPressed,
-              ]}
+            <LinearGradient
+              colors={theme.dark ? ["#0B5F6B", "#0F766E"] : ["#0E7490", "#0F766E"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.panelHeader}
             >
-              <LinearGradient
-                colors={theme.dark ? ["#0F766E", "#15803D"] : ["#0F766E", "#16A34A"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.loginButtonFill}
-              >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Feather name="log-in" size={18} color="#FFFFFF" />
-                )}
-                <Text style={styles.loginButtonText}>
-                  {isLoading ? "Ingresando..." : "Entrar"}
-                </Text>
-              </LinearGradient>
-            </Pressable>
+              <View style={styles.panelIcon}>
+                <Feather name="lock" size={18} color="#0F766E" />
+              </View>
+              <View style={styles.panelHeaderCopy}>
+                <Text style={styles.headerTitle}>Acceso seguro</Text>
+                <Text style={styles.headerText}>Ingresa al panel administrativo</Text>
+              </View>
+            </LinearGradient>
 
-            <TouchableOpacity style={styles.demoButton} onPress={demoLogin} activeOpacity={0.85}>
-              <Feather name="play-circle" size={17} color={theme.colors.primary} />
-              <Text style={styles.demoButtonText}>Usar modo demo</Text>
-            </TouchableOpacity>
+            <View style={styles.formCard}>
+              <View style={styles.titleBlock}>
+                <Text style={styles.title}>Iniciar sesion</Text>
+                <Text style={styles.subtitle}>Usa tus credenciales asignadas.</Text>
+              </View>
+
+              <View style={styles.form}>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Correo electronico</Text>
+                  <View style={styles.inputWrap}>
+                    <Feather name="mail" size={18} color="#0E7490" />
+                    <TextInput
+                      placeholder="usuario@farmacia.com"
+                      placeholderTextColor={theme.colors.textMuted}
+                      value={email}
+                      onChangeText={setEmail}
+                      style={styles.input}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>Contrasena</Text>
+                  <View style={styles.inputWrap}>
+                    <Feather name="shield" size={18} color="#0F766E" />
+                    <TextInput
+                      placeholder="Ingresa tu contrasena"
+                      placeholderTextColor={theme.colors.textMuted}
+                      value={password}
+                      onChangeText={setPassword}
+                      style={styles.input}
+                      secureTextEntry
+                    />
+                  </View>
+                </View>
+              </View>
+
+              <TouchableOpacity activeOpacity={0.75} style={styles.recoveryButton}>
+                <Text style={styles.recoveryText}>Olvidaste tu contrasena?</Text>
+              </TouchableOpacity>
+
+              <Pressable
+                disabled={isLoading}
+                onPress={handleLogin}
+                style={({ pressed }) => [
+                  styles.loginButton,
+                  isLoading && styles.disabled,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <LinearGradient
+                  colors={theme.dark ? ["#0E7490", "#0F766E"] : ["#0E7490", "#0F766E"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.loginButtonFill}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Feather name="arrow-right" size={18} color="#FFFFFF" />
+                  )}
+                  <Text style={styles.loginButtonText}>
+                    {isLoading ? "Ingresando..." : "Entrar"}
+                  </Text>
+                </LinearGradient>
+              </Pressable>
+
+              <TouchableOpacity style={styles.demoButton} onPress={demoLogin} activeOpacity={0.85}>
+                <Feather name="play-circle" size={17} color="#0E7490" />
+                <Text style={styles.demoButtonText}>Usar modo demo</Text>
+              </TouchableOpacity>
+            </View>
           </Animated.View>
 
           <Text style={styles.footerText}>Solicita tus credenciales al administrador si aun no tienes acceso.</Text>
@@ -214,14 +220,7 @@ const getStyles = (theme: any, isPhone: boolean) =>
   StyleSheet.create({
     root: {
       flex: 1,
-      backgroundColor: theme.dark ? "#07120F" : "#F8FAF9",
-    },
-    topAccent: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      height: 5,
+      backgroundColor: theme.dark ? "#06121A" : "#F6FAFB",
     },
     content: {
       flexGrow: 1,
@@ -230,34 +229,19 @@ const getStyles = (theme: any, isPhone: boolean) =>
     },
     shell: {
       width: "100%",
-      maxWidth: 440,
+      maxWidth: 430,
       alignItems: "center",
       gap: 18,
     },
-    brandHeader: {
+    logoArea: {
       width: "100%",
       alignItems: "center",
-      gap: 6,
-      marginBottom: isPhone ? 2 : 8,
-    },
-    logoBox: {
-      width: "100%",
-      maxWidth: 310,
-      height: 96,
-      alignItems: "center",
-      justifyContent: "center",
-      borderRadius: 14,
-      backgroundColor: theme.dark ? "rgba(255, 255, 255, 0.96)" : "#FFFFFF",
-      borderWidth: 1,
-      borderColor: theme.dark ? "rgba(134, 239, 172, 0.18)" : "rgba(209, 224, 216, 0.92)",
-      paddingHorizontal: 18,
-      paddingVertical: 12,
-      marginBottom: 10,
-      ...shadow(theme.colors.cardShadow),
+      gap: 10,
     },
     logo: {
       width: "100%",
-      height: 72,
+      maxWidth: 318,
+      height: 88,
       resizeMode: "contain",
     },
     appSubtitle: {
@@ -266,43 +250,64 @@ const getStyles = (theme: any, isPhone: boolean) =>
       fontWeight: "800",
       lineHeight: 20,
       textAlign: "center",
-      maxWidth: 330,
     },
-    card: {
+    panel: {
       width: "100%",
-      borderRadius: 18,
-      padding: isPhone ? 22 : 26,
-      backgroundColor: theme.dark ? "rgba(13, 24, 22, 0.98)" : "rgba(255, 255, 255, 0.98)",
+      borderRadius: 16,
+      overflow: "hidden",
+      backgroundColor: theme.colors.card,
       borderWidth: 1,
-      borderColor: theme.dark ? "rgba(134, 239, 172, 0.14)" : "rgba(209, 224, 216, 0.95)",
-      gap: 16,
+      borderColor: theme.dark ? "rgba(125, 211, 252, 0.16)" : "rgba(186, 210, 214, 0.95)",
       ...shadow(theme.colors.cardShadow),
     },
-    cardHeader: {
+    panelHeader: {
+      minHeight: 92,
+      flexDirection: "row",
       alignItems: "center",
-      gap: 4,
-      marginBottom: 2,
+      gap: 12,
+      paddingHorizontal: isPhone ? 18 : 22,
+      paddingVertical: 18,
     },
-    iconBadge: {
+    panelIcon: {
       width: 42,
       height: 42,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: 12,
-      marginBottom: 8,
-      backgroundColor: "#0F766E",
+      backgroundColor: "#FFFFFF",
+    },
+    panelHeaderCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    headerTitle: {
+      color: "#FFFFFF",
+      fontSize: 21,
+      fontWeight: "900",
+    },
+    headerText: {
+      color: "rgba(255, 255, 255, 0.84)",
+      fontSize: 13,
+      fontWeight: "700",
+      marginTop: 3,
+    },
+    formCard: {
+      padding: isPhone ? 20 : 24,
+      gap: 16,
+      backgroundColor: theme.dark ? "#0B1820" : "#FFFFFF",
+    },
+    titleBlock: {
+      gap: 4,
     },
     title: {
       color: theme.colors.text,
-      fontSize: 25,
+      fontSize: 24,
       fontWeight: "900",
-      textAlign: "center",
     },
     subtitle: {
       color: theme.colors.textMuted,
       fontSize: 14,
       lineHeight: 20,
-      textAlign: "center",
     },
     form: {
       gap: 13,
@@ -320,11 +325,11 @@ const getStyles = (theme: any, isPhone: boolean) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
-      backgroundColor: theme.dark ? "#07120F" : "#F7FAF8",
+      backgroundColor: theme.dark ? "#06121A" : "#F7FAFB",
       paddingHorizontal: 14,
-      borderRadius: 12,
+      borderRadius: 10,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.dark ? "rgba(125, 211, 252, 0.18)" : "#D7E5E6",
     },
     input: {
       flex: 1,
@@ -337,18 +342,18 @@ const getStyles = (theme: any, isPhone: boolean) =>
       alignSelf: "flex-end",
     },
     recoveryText: {
-      color: theme.colors.primary,
+      color: "#0E7490",
       fontSize: 13,
       fontWeight: "900",
     },
     loginButton: {
       minHeight: 52,
-      borderRadius: 12,
+      borderRadius: 10,
       overflow: "hidden",
     },
     loginButtonFill: {
       minHeight: 52,
-      flexDirection: "row",
+      flexDirection: "row-reverse",
       alignItems: "center",
       justifyContent: "center",
       gap: 9,
@@ -365,13 +370,13 @@ const getStyles = (theme: any, isPhone: boolean) =>
       gap: 8,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 12,
+      borderRadius: 10,
       borderWidth: 1,
-      borderColor: theme.colors.border,
-      backgroundColor: theme.dark ? "rgba(7, 18, 15, 0.72)" : "#FFFFFF",
+      borderColor: theme.dark ? "rgba(125, 211, 252, 0.18)" : "#D7E5E6",
+      backgroundColor: theme.dark ? "#0B1820" : "#FFFFFF",
     },
     demoButtonText: {
-      color: theme.colors.primary,
+      color: "#0E7490",
       fontWeight: "900",
       fontSize: 14,
     },
