@@ -132,7 +132,7 @@ export const LoginScreen = () => {
           styles.content,
           {
             paddingHorizontal: layout.pagePadding,
-            paddingVertical: layout.isPhone ? 22 : 38,
+            paddingVertical: layout.isPhone ? 14 : 38,
           },
         ]}
       >
@@ -419,7 +419,7 @@ const getStyles = (theme: any, isPhone: boolean) =>
     shell: {
       width: "100%",
       maxWidth: 1100,
-      gap: isPhone ? 22 : 34,
+      gap: isPhone ? 14 : 34,
     },
     shellWide: {
       flexDirection: "row",
@@ -430,17 +430,17 @@ const getStyles = (theme: any, isPhone: boolean) =>
       flex: 1,
       minHeight: isPhone ? undefined : 610,
       justifyContent: "center",
-      gap: isPhone ? 22 : 30,
+      gap: isPhone ? 12 : 30,
       paddingHorizontal: isPhone ? 2 : 24,
-      paddingVertical: isPhone ? 4 : 28,
+      paddingVertical: isPhone ? 0 : 28,
     },
     brandTopbar: {
-      alignItems: "flex-start",
-      gap: 10,
+      alignItems: isPhone ? "center" : "flex-start",
+      gap: isPhone ? 6 : 10,
     },
     brandLogo: {
-      width: isPhone ? 250 : 318,
-      height: isPhone ? 82 : 102,
+      width: isPhone ? 228 : 318,
+      height: isPhone ? 70 : 102,
       resizeMode: "contain",
     },
     brandBadge: {
@@ -449,7 +449,7 @@ const getStyles = (theme: any, isPhone: boolean) =>
       alignItems: "center",
       gap: 7,
       borderRadius: 8,
-      paddingHorizontal: 11,
+      paddingHorizontal: isPhone ? 9 : 11,
       backgroundColor: theme.dark ? "rgba(15,118,110,0.16)" : "rgba(15,118,110,0.08)",
       borderWidth: 1,
       borderColor: theme.dark ? "rgba(45,212,191,0.17)" : "rgba(15,118,110,0.13)",
@@ -461,10 +461,11 @@ const getStyles = (theme: any, isPhone: boolean) =>
     },
     heroBlock: {
       maxWidth: 560,
-      gap: 12,
+      gap: isPhone ? 8 : 12,
+      alignItems: isPhone ? "center" : "flex-start",
     },
     eyebrow: {
-      alignSelf: "flex-start",
+      alignSelf: isPhone ? "center" : "flex-start",
       minHeight: 32,
       flexDirection: "row",
       alignItems: "center",
@@ -484,10 +485,11 @@ const getStyles = (theme: any, isPhone: boolean) =>
     heroTitle: {
       maxWidth: 540,
       color: theme.colors.text,
-      fontSize: isPhone ? 30 : 46,
-      lineHeight: isPhone ? 37 : 53,
+      fontSize: isPhone ? 23 : 46,
+      lineHeight: isPhone ? 29 : 53,
       fontWeight: "900",
-      letterSpacing: -1.2,
+      letterSpacing: isPhone ? -0.5 : -1.2,
+      textAlign: isPhone ? "center" : "left",
     },
     heroText: {
       maxWidth: 500,
@@ -498,7 +500,8 @@ const getStyles = (theme: any, isPhone: boolean) =>
     },
     featureList: {
       maxWidth: 530,
-      gap: 12,
+      gap: isPhone ? 6 : 12,
+      display: isPhone ? "none" : "flex",
     },
     featureItem: {
       flexDirection: "row",
@@ -547,18 +550,18 @@ const getStyles = (theme: any, isPhone: boolean) =>
       width: "100%",
       maxWidth: isPhone ? "100%" : 430,
       alignSelf: "center",
-      borderRadius: 20,
+      borderRadius: isPhone ? 18 : 20,
       overflow: "hidden",
       backgroundColor: theme.dark ? "#0B181E" : "#FFFFFF",
       borderWidth: 1,
       borderColor: theme.dark ? "rgba(96,165,250,0.16)" : "#DCE7F2",
-      paddingHorizontal: isPhone ? 20 : 28,
-      paddingBottom: isPhone ? 22 : 28,
-      gap: 18,
+      paddingHorizontal: isPhone ? 18 : 28,
+      paddingBottom: isPhone ? 18 : 28,
+      gap: isPhone ? 14 : 18,
       ...shadow(theme.colors.cardShadow),
     },
     cardAccentAnimated: {
-      marginHorizontal: isPhone ? -20 : -28,
+      marginHorizontal: isPhone ? -18 : -28,
       overflow: "hidden",
     },
     cardAccent: {
@@ -568,7 +571,7 @@ const getStyles = (theme: any, isPhone: boolean) =>
     loginHeader: {
       alignItems: "flex-start",
       gap: 6,
-      paddingTop: 4,
+      paddingTop: isPhone ? 2 : 4,
     },
     loginIcon: {
       width: 46,
@@ -576,26 +579,26 @@ const getStyles = (theme: any, isPhone: boolean) =>
       alignItems: "center",
       justifyContent: "center",
       borderRadius: 15,
-      marginBottom: 4,
+      marginBottom: isPhone ? 2 : 4,
       backgroundColor: theme.dark ? "rgba(45,212,191,0.12)" : "#ECFDF7",
       borderWidth: 1,
       borderColor: theme.dark ? "rgba(45,212,191,0.20)" : "#CFF6EA",
     },
     title: {
       color: theme.colors.text,
-      fontSize: isPhone ? 25 : 28,
+      fontSize: isPhone ? 22 : 28,
       fontWeight: "900",
       letterSpacing: -0.5,
     },
     subtitle: {
       maxWidth: 330,
       color: theme.colors.textMuted,
-      fontSize: 14,
-      lineHeight: 21,
+      fontSize: isPhone ? 13 : 14,
+      lineHeight: isPhone ? 19 : 21,
       fontWeight: "500",
     },
     form: {
-      gap: 16,
+      gap: isPhone ? 12 : 16,
     },
     fieldGroup: {
       gap: 8,
@@ -618,7 +621,7 @@ const getStyles = (theme: any, isPhone: boolean) =>
       gap: 10,
       backgroundColor: theme.dark ? "#081724" : "#F8FBFF",
       paddingHorizontal: 14,
-      borderRadius: 14,
+      borderRadius: 12,
       borderWidth: 1,
       borderColor: theme.dark ? "rgba(96,165,250,0.16)" : "#D8E5F0",
     },
@@ -646,7 +649,7 @@ const getStyles = (theme: any, isPhone: boolean) =>
     },
     loginButton: {
       minHeight: 54,
-      borderRadius: 14,
+      borderRadius: 12,
       overflow: "hidden",
       ...shadow("rgba(37,99,235,0.20)"),
     },
@@ -666,7 +669,7 @@ const getStyles = (theme: any, isPhone: boolean) =>
     dividerRow: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 10,
+      gap: isPhone ? 7 : 10,
     },
     divider: {
       flex: 1,
@@ -675,7 +678,7 @@ const getStyles = (theme: any, isPhone: boolean) =>
     },
     dividerText: {
       color: theme.colors.textMuted,
-      fontSize: 11.5,
+      fontSize: isPhone ? 10.5 : 11.5,
       fontWeight: "700",
     },
     demoButton: {
@@ -684,7 +687,7 @@ const getStyles = (theme: any, isPhone: boolean) =>
       gap: 9,
       alignItems: "center",
       justifyContent: "center",
-      borderRadius: 14,
+      borderRadius: 12,
       borderWidth: 1,
       borderColor: theme.dark ? "rgba(125,211,252,0.15)" : "#D6E3E5",
       backgroundColor: theme.dark ? "rgba(255,255,255,0.02)" : "#FFFFFF",
@@ -707,7 +710,7 @@ const getStyles = (theme: any, isPhone: boolean) =>
       alignItems: "center",
       justifyContent: "center",
       gap: 7,
-      paddingTop: 2,
+      paddingTop: isPhone ? 0 : 2,
     },
     cardFooterText: {
       color: theme.colors.textMuted,
@@ -722,3 +725,31 @@ const getStyles = (theme: any, isPhone: boolean) =>
       opacity: 0.55,
     },
   });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
