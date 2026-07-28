@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
+  getCurrentNeuralApiUrl,
   getMedicineSupportInfo,
   sendLearningFeedback,
   sendNeuralChatMessage,
@@ -173,6 +174,48 @@ const formatMedicineSupportText = (info: any) => {
   return lines.join("\n\n");
 };
 
+const getReadableApiError = async (error: any, action: string) => {
+  const apiUrl = await getCurrentNeuralApiUrl();
+  const status = error?.response?.status;
+  const detail =
+    error?.response?.data?.detail ||
+    error?.response?.data?.mensaje ||
+    error?.response?.data?.error ||
+    error?.message;
+  const localHostHint =
+    Platform.OS !== "web" && /127\.0\.0\.1|localhost/i.test(apiUrl)
+      ? " En celular fisico cambia la URL por la IP de tu PC, por ejemplo http://192.168.x.x:8000."
+      : "";
+
+  if (status) {
+    return `${action} La API respondio con estado ${status}.${detail ? ` Detalle: ${detail}.` : ""}`;
+  }
+
+  if (error?.code === "ECONNABORTED") {
+    return `${action} La API tardo demasiado en responder. URL actual: ${apiUrl}.${localHostHint}`;
+  }
+
+  return `${action} No pude llegar a la API. URL actual: ${apiUrl}.${localHostHint}${
+    detail ? ` Detalle: ${detail}.` : ""
+  }`;
+};
+
+const buildMedicineErrorInfo = async (error: any, query: string) => ({
+  consulta: query,
+  mensaje_usuario: await getReadableApiError(
+    error,
+    "No pude consultar el medicamento.",
+  ),
+  recomendaciones_seguras: [
+    "Verifica la URL de API en Configuracion.",
+    "Si estas en celular fisico, usa la IP de la computadora y no 127.0.0.1.",
+    "Confirma que Pharma Neural este iniciado en el puerto 8000.",
+  ],
+  errores: [],
+  aviso_medico:
+    "Informacion solo de apoyo. No sustituye diagnostico, receta ni indicacion de un profesional de salud.",
+});
+
 const MedicineSupportCard = ({
   info,
   styles,
@@ -319,15 +362,27 @@ export const ChatScreen = () => {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch {
+    } catch (requestError) {
+      const medicineName = detectMedicineQuery(text);
+      const errorContent = medicineName
+        ? ""
+        : await getReadableApiError(
+            requestError,
+            "No pude procesar el mensaje del chat.",
+          );
+      const errorMedicineInfo = medicineName
+        ? await buildMedicineErrorInfo(requestError, medicineName)
+        : undefined;
+
       setMessages((prev) => [
         ...prev,
         {
           id: `ai-error-${Date.now()}`,
           role: "ai",
-          content:
-            "No pude conectar con la IA. Revisa que Pharma Neural esté encendido y que la URL de API sea correcta.",
+          content: errorContent,
           sourceMessage: text,
+          intent: medicineName ? "consulta_medicamento_error" : undefined,
+          medicineInfo: errorMedicineInfo,
         },
       ]);
     } finally {
@@ -400,15 +455,27 @@ export const ChatScreen = () => {
         medicineInfo: medicineName ? data : undefined,
       };
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch {
+    } catch (requestError) {
+      const medicineName = detectMedicineQuery(transcript);
+      const errorContent = medicineName
+        ? ""
+        : await getReadableApiError(
+            requestError,
+            "No pude procesar la transcripcion de voz.",
+          );
+      const errorMedicineInfo = medicineName
+        ? await buildMedicineErrorInfo(requestError, medicineName)
+        : undefined;
+
       setMessages((prev) => [
         ...prev,
         {
           id: `voice-error-${Date.now()}`,
           role: "ai",
-          content:
-            "No pude procesar la transcripcion de voz. Revisa la API Neural.",
+          content: errorContent,
           sourceMessage: transcript,
+          intent: medicineName ? "consulta_medicamento_error" : undefined,
+          medicineInfo: errorMedicineInfo,
         },
       ]);
     } finally {
@@ -533,15 +600,27 @@ export const ChatScreen = () => {
         medicineInfo: medicineName ? data : undefined,
       };
       setMessages((prev) => [...prev, assistantMessage]);
-    } catch {
+    } catch (requestError) {
+      const medicineName = detectMedicineQuery(cleanTranscript);
+      const errorContent = medicineName
+        ? ""
+        : await getReadableApiError(
+            requestError,
+            "Escuche la voz, pero no pude enviar la transcripcion a la IA.",
+          );
+      const errorMedicineInfo = medicineName
+        ? await buildMedicineErrorInfo(requestError, medicineName)
+        : undefined;
+
       setMessages((prev) => [
         ...prev,
         {
           id: `voice-error-${Date.now()}`,
           role: "ai",
-          content:
-            "Escuché la voz, pero no pude enviar la transcripción a la IA.",
+          content: errorContent,
           sourceMessage: cleanTranscript,
+          intent: medicineName ? "consulta_medicamento_error" : undefined,
+          medicineInfo: errorMedicineInfo,
         },
       ]);
     } finally {
