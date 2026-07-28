@@ -439,8 +439,8 @@ const getStyles = (theme: any, isPhone: boolean) =>
       gap: isPhone ? 6 : 10,
     },
     brandLogo: {
-      width: isPhone ? 300 : 336,
-      height: isPhone ? 200 : 108,
+      width: isPhone ? 340 : 420,
+      height: isPhone ? 220 : 142,
       resizeMode: "contain",
     },
     brandBadge: {
