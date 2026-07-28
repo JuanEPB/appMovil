@@ -186,7 +186,7 @@ export const MedicamentosScreen = () => {
   const [filtro, setFiltro] = useState<InventoryFilter>("Todos");
   const [dataSource, setDataSource] = useState<"api" | "local">("local");
 
-  const itemsPorPagina = layout.isDesktop ? 9 : 6;
+  const itemsPorPagina = layout.isDesktop ? 9 : layout.isPhone ? 5 : 6;
 
   const fetchMedicamentos = useCallback(async () => {
     try {
@@ -850,6 +850,7 @@ const MedicineCard = ({ med, onRefresh }: MedicineCardProps) => {
             />
 
             <Text
+              numberOfLines={1}
               style={[
                 styles.statusTagText,
                 {
@@ -1014,7 +1015,12 @@ const MedicineCard = ({ med, onRefresh }: MedicineCardProps) => {
 
 const MetaItem = ({ icon, label, value, accent }: MetaItemProps) => {
   const { theme } = useTheme();
-  const styles = useMemo(() => getStyles(theme, false, 1), [theme]);
+  const { width } = useWindowDimensions();
+  const layout = getLayout(width);
+  const styles = useMemo(
+    () => getStyles(theme, layout.isPhone, layout.columns),
+    [theme, layout.isPhone, layout.columns],
+  );
 
   return (
     <View style={styles.metaItem}>
@@ -1045,7 +1051,7 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
     content: {
       width: "100%",
       alignSelf: "center",
-      paddingTop: isPhone ? 16 : 22,
+      paddingTop: isPhone ? 10 : 22,
     },
 
     feedbackContainer: {
@@ -1090,8 +1096,8 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
       flexDirection: isPhone ? "column" : "row",
       alignItems: isPhone ? "stretch" : "center",
       justifyContent: "space-between",
-      gap: 18,
-      marginBottom: 18,
+      gap: isPhone ? 10 : 18,
+      marginBottom: isPhone ? 12 : 18,
     },
 
     headerCopy: {
@@ -1123,15 +1129,15 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
 
     title: {
       color: theme.colors.text,
-      fontSize: isPhone ? 29 : 36,
+      fontSize: isPhone ? 25 : 36,
       fontWeight: "700",
-      letterSpacing: -0.5,
+      letterSpacing: 0,
     },
 
     subtitle: {
       color: theme.colors.textMuted,
-      fontSize: 14,
-      lineHeight: 21,
+      fontSize: isPhone ? 12 : 14,
+      lineHeight: isPhone ? 17 : 21,
       marginTop: 5,
     },
 
@@ -1162,18 +1168,18 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
 
     headerActions: {
       flexDirection: "row",
-      flexWrap: "wrap",
+      flexWrap: "nowrap",
       alignItems: "center",
-      gap: 10,
+      gap: isPhone ? 8 : 10,
     },
 
     primaryButton: {
-      minHeight: 42,
+      minHeight: isPhone ? 38 : 42,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 8,
-      paddingHorizontal: 16,
+      paddingHorizontal: isPhone ? 12 : 16,
       borderRadius: 7,
       backgroundColor: theme.colors.primary,
       flexGrow: isPhone ? 1 : 0,
@@ -1186,12 +1192,12 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
     },
 
     secondaryButton: {
-      minHeight: 42,
+      minHeight: isPhone ? 38 : 42,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
       gap: 7,
-      paddingHorizontal: 14,
+      paddingHorizontal: isPhone ? 12 : 14,
       borderRadius: 7,
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -1221,18 +1227,18 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
     summaryGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
-      marginBottom: 18,
+      marginBottom: isPhone ? 12 : 18,
     },
 
     summaryCard: {
       flexGrow: 1,
-      flexBasis: isPhone ? "100%" : "22%",
-      minWidth: isPhone ? "100%" : 185,
-      minHeight: isPhone ? 70 : 82,
+      flexBasis: isPhone ? "47%" : "22%",
+      minWidth: isPhone ? 120 : 185,
+      minHeight: isPhone ? 62 : 82,
       flexDirection: "row",
       alignItems: "center",
-      gap: 11,
-      padding: 13,
+      gap: isPhone ? 8 : 11,
+      padding: isPhone ? 10 : 13,
       borderRadius: 9,
       borderWidth: 1,
       borderLeftWidth: 3,
@@ -1241,8 +1247,8 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
     },
 
     summaryIcon: {
-      width: 38,
-      height: 38,
+      width: isPhone ? 32 : 38,
+      height: isPhone ? 32 : 38,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: 8,
@@ -1254,12 +1260,12 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
 
     summaryLabel: {
       color: theme.colors.textMuted,
-      fontSize: 11,
+      fontSize: isPhone ? 10 : 11,
       fontWeight: "600",
     },
 
     summaryValue: {
-      fontSize: 22,
+      fontSize: isPhone ? 18 : 22,
       fontWeight: "700",
       marginTop: 2,
     },
@@ -1269,13 +1275,13 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
       borderWidth: 1,
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.card,
-      padding: isPhone ? 12 : 14,
-      marginBottom: 18,
+      padding: isPhone ? 10 : 14,
+      marginBottom: isPhone ? 12 : 18,
       ...shadow(theme.colors.cardShadow),
     },
 
     searchWrap: {
-      minHeight: 46,
+      minHeight: isPhone ? 42 : 46,
       flexDirection: "row",
       alignItems: "center",
       gap: 10,
@@ -1304,16 +1310,16 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
 
     filters: {
       gap: 8,
-      paddingTop: 12,
+      paddingTop: isPhone ? 9 : 12,
       paddingBottom: 2,
     },
 
     filterChip: {
-      minHeight: 34,
+      minHeight: isPhone ? 30 : 34,
       flexDirection: "row",
       alignItems: "center",
       gap: 7,
-      paddingHorizontal: 11,
+      paddingHorizontal: isPhone ? 10 : 11,
       borderRadius: 999,
       borderWidth: 1,
       borderColor: theme.colors.border,
@@ -1342,12 +1348,12 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
     },
 
     resultsBar: {
-      flexDirection: isPhone ? "column" : "row",
-      alignItems: isPhone ? "flex-start" : "center",
+      flexDirection: "row",
+      alignItems: "center",
       justifyContent: "space-between",
-      gap: 12,
-      paddingTop: 12,
-      marginTop: 10,
+      gap: isPhone ? 8 : 12,
+      paddingTop: isPhone ? 9 : 12,
+      marginTop: isPhone ? 8 : 10,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
     },
@@ -1389,16 +1395,16 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
     },
 
     cardContent: {
-      padding: isPhone ? 14 : 15,
-      paddingLeft: isPhone ? 16 : 17,
+      padding: isPhone ? 11 : 15,
+      paddingLeft: isPhone ? 14 : 17,
     },
 
     cardTop: {
-      flexDirection: isPhone ? "column" : "row",
-      alignItems: isPhone ? "stretch" : "flex-start",
+      flexDirection: "row",
+      alignItems: "flex-start",
       justifyContent: "space-between",
-      gap: 10,
-      marginBottom: 15,
+      gap: isPhone ? 8 : 10,
+      marginBottom: isPhone ? 10 : 15,
     },
 
     cardIdentity: {
@@ -1406,12 +1412,12 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
       minWidth: 0,
       flexDirection: "row",
       alignItems: "flex-start",
-      gap: 10,
+      gap: isPhone ? 8 : 10,
     },
 
     medicineIcon: {
-      width: isPhone ? 38 : 40,
-      height: isPhone ? 38 : 40,
+      width: isPhone ? 32 : 40,
+      height: isPhone ? 32 : 40,
       flexShrink: 0,
       alignItems: "center",
       justifyContent: "center",
@@ -1425,15 +1431,15 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
 
     medicineName: {
       color: theme.colors.text,
-      fontSize: isPhone ? 17 : 16,
+      fontSize: isPhone ? 14 : 16,
       fontWeight: "800",
-      lineHeight: isPhone ? 23 : 21,
+      lineHeight: isPhone ? 18 : 21,
     },
 
     categoryText: {
       color: theme.colors.textMuted,
-      fontSize: 12,
-      marginTop: 3,
+      fontSize: isPhone ? 10 : 12,
+      marginTop: 2,
       textTransform: "capitalize",
     },
 
@@ -1441,10 +1447,11 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      paddingHorizontal: 9,
-      paddingVertical: 5,
+      paddingHorizontal: isPhone ? 7 : 9,
+      paddingVertical: isPhone ? 4 : 5,
       borderRadius: 999,
-      alignSelf: isPhone ? "flex-start" : "auto",
+      alignSelf: "flex-start",
+      maxWidth: isPhone ? 94 : undefined,
     },
 
     statusDot: {
@@ -1454,23 +1461,23 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
     },
 
     statusTagText: {
-      fontSize: 10,
+      fontSize: isPhone ? 9 : 10,
       fontWeight: "700",
     },
 
     stockSection: {
       borderRadius: 8,
       backgroundColor: theme.colors.background,
-      padding: isPhone ? 13 : 12,
-      marginBottom: 13,
+      padding: isPhone ? 10 : 12,
+      marginBottom: isPhone ? 9 : 13,
     },
 
     stockHeader: {
-      flexDirection: isPhone ? "column" : "row",
-      alignItems: isPhone ? "stretch" : "flex-start",
+      flexDirection: "row",
+      alignItems: "flex-start",
       justifyContent: "space-between",
-      gap: 12,
-      marginBottom: 10,
+      gap: isPhone ? 8 : 12,
+      marginBottom: isPhone ? 8 : 10,
     },
 
     stockLabel: {
@@ -1490,7 +1497,7 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
 
     stockValue: {
       color: theme.colors.text,
-      fontSize: 23,
+      fontSize: isPhone ? 19 : 23,
       fontWeight: "700",
     },
 
@@ -1501,7 +1508,7 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
     },
 
     expirationSummary: {
-      maxWidth: isPhone ? "100%" : "53%",
+      maxWidth: isPhone ? "48%" : "53%",
       flexDirection: "row",
       alignItems: "center",
       gap: 5,
@@ -1510,9 +1517,9 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
 
     expirationSummaryText: {
       flexShrink: 1,
-      fontSize: 11,
+      fontSize: isPhone ? 10 : 11,
       fontWeight: "600",
-      textAlign: isPhone ? "left" : "right",
+      textAlign: "right",
     },
 
     stockTrack: {
@@ -1530,18 +1537,18 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
     metaGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: 10,
+      gap: isPhone ? 7 : 10,
     },
 
     metaItem: {
       flexGrow: 1,
       flexBasis: isPhone ? "46%" : "29%",
-      minWidth: isPhone ? 125 : 90,
+      minWidth: isPhone ? 108 : 90,
       borderRadius: 7,
       borderWidth: 1,
       borderColor: theme.colors.border,
       backgroundColor: theme.colors.card,
-      padding: 10,
+      padding: isPhone ? 8 : 10,
     },
 
     metaLabelRow: {
@@ -1552,7 +1559,7 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
 
     metaLabel: {
       color: theme.colors.textMuted,
-      fontSize: 10,
+      fontSize: isPhone ? 9 : 10,
       fontWeight: "600",
       textTransform: "uppercase",
       letterSpacing: 0.35,
@@ -1560,24 +1567,24 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
 
     metaValue: {
       color: theme.colors.text,
-      fontSize: 12,
+      fontSize: isPhone ? 11 : 12,
       fontWeight: "600",
-      marginTop: 6,
+      marginTop: isPhone ? 4 : 6,
     },
 
     cardActions: {
-      flexDirection: isPhone ? "column" : "row",
-      alignItems: isPhone ? "stretch" : "center",
+      flexDirection: "row",
+      alignItems: "center",
       justifyContent: "space-between",
-      gap: 10,
-      marginTop: 14,
-      paddingTop: 12,
+      gap: isPhone ? 8 : 10,
+      marginTop: isPhone ? 9 : 14,
+      paddingTop: isPhone ? 9 : 12,
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
     },
 
     editAction: {
-      minHeight: 36,
+      minHeight: isPhone ? 34 : 36,
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
@@ -1585,7 +1592,7 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
       paddingHorizontal: 12,
       borderRadius: 7,
       backgroundColor: withOpacity(theme.colors.primary, 0.08),
-      flexGrow: isPhone ? 1 : 0,
+      flexGrow: 0,
     },
 
     editActionText: {
@@ -1598,12 +1605,12 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
       flexDirection: "row",
       alignItems: "center",
       gap: 6,
-      justifyContent: isPhone ? "space-between" : "flex-start",
+      justifyContent: "flex-start",
     },
 
     iconAction: {
-      width: isPhone ? 48 : 36,
-      height: 36,
+      width: isPhone ? 36 : 36,
+      height: isPhone ? 34 : 36,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: 7,
@@ -1620,8 +1627,8 @@ const getStyles = (theme: any, isPhone: boolean, columns: number) =>
     },
 
     deleteAction: {
-      width: isPhone ? 48 : 36,
-      height: 36,
+      width: isPhone ? 36 : 36,
+      height: isPhone ? 34 : 36,
       alignItems: "center",
       justifyContent: "center",
       borderRadius: 7,
