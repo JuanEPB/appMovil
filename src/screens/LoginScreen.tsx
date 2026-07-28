@@ -155,7 +155,7 @@ export const LoginScreen = () => {
           >
             <View style={styles.brandTopbar}>
               <Animated.View style={{ transform: [{ scale: logoPulse }] }}>
-                <Image source={require("../../assets/logo.png")} style={styles.brandLogo} />
+                <Image source={require("../../assets/logo1.png")} style={styles.brandLogo} />
               </Animated.View>
               <View style={styles.brandBadge}>
                 <Feather name="check-circle" size={14} color="#0F766E" />
@@ -439,8 +439,8 @@ const getStyles = (theme: any, isPhone: boolean) =>
       gap: isPhone ? 6 : 10,
     },
     brandLogo: {
-      width: isPhone ? 228 : 318,
-      height: isPhone ? 70 : 102,
+      width: isPhone ? 300 : 336,
+      height: isPhone ? 200 : 108,
       resizeMode: "contain",
     },
     brandBadge: {
@@ -725,31 +725,3 @@ const getStyles = (theme: any, isPhone: boolean) =>
       opacity: 0.55,
     },
   });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
