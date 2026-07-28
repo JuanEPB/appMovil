@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -11,6 +12,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../context/ThemeContext";
 import { GradientButton } from "../components/GradientButton";
@@ -19,16 +21,25 @@ import { getLayout, shadow } from "../utils/responsive";
 
 export const LoginScreen = () => {
   const { theme } = useTheme();
-  const { login, demoLogin, isLoading } =
-    useAuth?.() ?? { login: async () => {}, demoLogin: async () => {}, isLoading: false };
+  const { login, demoLogin, isLoading, error } =
+    useAuth?.() ?? { login: async () => {}, demoLogin: async () => {}, isLoading: false, error: null };
   const { width } = useWindowDimensions();
   const layout = getLayout(width);
   const styles = useMemo(() => getStyles(theme, layout.isPhone), [theme, layout.isPhone]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    await login?.({ email, contraseña: password });
+    await login?.({ email: email.trim(), contraseña: password });
+  };
+
+  const handleForgotPassword = () => {
+    Alert.alert(
+      "Recuperar contraseña",
+      "Solicita al administrador que restablezca tu contraseña para poder ingresar nuevamente.",
+      [{ text: "Entendido" }],
+    );
   };
 
   return (
@@ -56,11 +67,11 @@ export const LoginScreen = () => {
         </View>
 
         <View style={[styles.card, { maxWidth: layout.isPhone ? "100%" : 430 }]}>
-          <Text style={styles.title}>Iniciar sesion</Text>
+          <Text style={styles.title}>Iniciar sesión</Text>
           <Text style={styles.subtitle}>Accede a tu inventario, reportes y recordatorios.</Text>
 
           <TextInput
-            placeholder="Correo electronico"
+            placeholder="Correo electrónico"
             placeholderTextColor={theme.colors.textMuted}
             value={email}
             onChangeText={setEmail}
@@ -69,23 +80,39 @@ export const LoginScreen = () => {
             keyboardType="email-address"
           />
 
-          <TextInput
-            placeholder="Contrasena"
-            placeholderTextColor={theme.colors.textMuted}
-            value={password}
-            onChangeText={setPassword}
-            style={styles.input}
-            secureTextEntry
-          />
+          <View style={styles.passwordWrap}>
+            <TextInput
+              placeholder="Contraseña"
+              placeholderTextColor={theme.colors.textMuted}
+              value={password}
+              onChangeText={setPassword}
+              style={styles.passwordInput}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword((current) => !current)}
+              activeOpacity={0.7}
+              style={styles.eyeButton}
+              accessibilityLabel={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+            >
+              <Feather
+                name={showPassword ? "eye-off" : "eye"}
+                size={19}
+                color={theme.colors.textMuted}
+              />
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity activeOpacity={0.75}>
+          {!!error && <Text style={styles.errorText}>{error}</Text>}
+
+          <TouchableOpacity activeOpacity={0.75} onPress={handleForgotPassword}>
             <Text style={styles.helpText}>
-              Olvidaste tu contrasena? Contacta a tu administrador.
+              ¿Olvidaste tu contraseña? Contacta a tu administrador.
             </Text>
           </TouchableOpacity>
 
           <GradientButton
-            title={isLoading ? "Ingresando..." : "Iniciar sesion"}
+            title={isLoading ? "Ingresando..." : "Iniciar sesión"}
             onPress={handleLogin}
           />
 
@@ -168,6 +195,36 @@ const getStyles = (theme: any, isPhone: boolean) =>
       borderColor: theme.colors.border,
       color: theme.colors.text,
       fontSize: 15,
+    },
+    passwordWrap: {
+      minHeight: 48,
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: theme.colors.background,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      paddingLeft: 14,
+    },
+    passwordInput: {
+      flex: 1,
+      minWidth: 0,
+      color: theme.colors.text,
+      fontSize: 15,
+      paddingVertical: 12,
+    },
+    eyeButton: {
+      width: 46,
+      minHeight: 46,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    errorText: {
+      color: theme.colors.danger,
+      fontSize: 13,
+      fontWeight: "700",
+      lineHeight: 18,
+      textAlign: "center",
     },
     helpText: {
       color: theme.colors.primary,

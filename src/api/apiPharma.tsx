@@ -6,7 +6,7 @@ import { navigationRef } from '../navigation/NavigationService';
 import { CommonActions } from '@react-navigation/native';
 
 export const apiPharma = axios.create({
-  baseURL: 'https://api.pharmacontrol.site',
+  baseURL: process.env.EXPO_PUBLIC_PHARMA_API_URL || 'https://api.pharmacontrol.site',
   timeout: 10000,
   headers: { 'Content-Type': 'application/json' },
 });
