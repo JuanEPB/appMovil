@@ -12,15 +12,20 @@ import {
 } from "react-native";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { registerPushToken } from "../api/apiPharma";
 import {
   getInventoryAlerts,
   getLowStockReport,
 } from "../api/apiNeural";
 import { HeaderMenu } from "../components/HeaderMenu";
 import { useTheme } from "../context/ThemeContext";
+import { isDemoToken, localDb } from "../data/localDb";
+import { registerForPushNotificationsAsync } from "../utils/notifications";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
+import { checkConnection } from "../utils/network";
 
 type AlertItem = {
   id?: number | string;
@@ -66,18 +71,42 @@ export const AlertsInboxScreen = () => {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [registeringPush, setRegisteringPush] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sourceLabel, setSourceLabel] = useState("backend");
 
   const loadAlerts = useCallback(async () => {
     try {
       setError(null);
+      const token = await AsyncStorage.getItem("token");
+
+      if (isDemoToken(token)) {
+        setAlerts(await localDb.getAlerts());
+        setSourceLabel("demo local");
+        return;
+      }
+
+      const online = await checkConnection();
+
+      if (!online) {
+        const localAlerts = await localDb.getAlerts();
+        setAlerts(localAlerts);
+        setSourceLabel("cache local");
+        setError("Sin conexion. Mostrando alertas calculadas localmente.");
+        return;
+      }
+
       const data = await getInventoryAlerts(100);
       setAlerts(Array.isArray(data?.alertas) ? data.alertas : []);
+      setSourceLabel("backend");
     } catch (requestError) {
+      const localAlerts = await localDb.getAlerts();
+      setAlerts(localAlerts);
+      setSourceLabel("fallback local");
       setError(
         requestError instanceof Error
-          ? requestError.message
-          : "No se pudieron cargar las alertas.",
+          ? `${requestError.message} Mostrando alertas locales.`
+          : "No se pudieron cargar las alertas del backend. Mostrando alertas locales.",
       );
     } finally {
       setLoading(false);
@@ -129,6 +158,29 @@ export const AlertsInboxScreen = () => {
     }
   };
 
+  const enablePushNotifications = async () => {
+    try {
+      setRegisteringPush(true);
+      setError(null);
+
+      const token = await registerForPushNotificationsAsync();
+
+      if (!token) {
+        throw new Error("No se pudo obtener el token push del dispositivo.");
+      }
+
+      await registerPushToken(token);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "No se pudieron activar las notificaciones push.",
+      );
+    } finally {
+      setRegisteringPush(false);
+    }
+  };
+
   const lowStockCount = alerts.filter((alert) =>
     ["AGOTADO", "CRITICO", "PRECAUCION"].includes(String(alert.estado || "")),
   ).length;
@@ -160,7 +212,7 @@ export const AlertsInboxScreen = () => {
         <View style={[styles.actions, { gap: layout.gap }]}>
           <View style={styles.metric}>
             <Text style={styles.metricValue}>{alerts.length}</Text>
-            <Text style={styles.metricLabel}>alertas activas</Text>
+            <Text style={styles.metricLabel}>alertas activas ({sourceLabel})</Text>
           </View>
           <View style={styles.metric}>
             <Text style={[styles.metricValue, { color: theme.colors.warning }]}>
@@ -179,6 +231,18 @@ export const AlertsInboxScreen = () => {
               <Feather name="file-text" size={16} color="#FFFFFF" />
             )}
             <Text style={styles.pdfButtonText}>PDF bajo stock</Text>
+          </Pressable>
+          <Pressable
+            onPress={enablePushNotifications}
+            disabled={registeringPush}
+            style={({ pressed }) => [styles.pdfButton, pressed && styles.pressed]}
+          >
+            {registeringPush ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Feather name="send" size={16} color="#FFFFFF" />
+            )}
+            <Text style={styles.pdfButtonText}>Activar push</Text>
           </Pressable>
         </View>
 

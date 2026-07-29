@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Categoria, DocumentoBase, Medicamento, Proveedor, VentaData } from "../interfaces/interface";
+import { buildInventoryAlerts } from "../utils/inventoryAlerts";
 
 const DB_KEY = "pharma_local_db";
 
@@ -143,6 +144,17 @@ export const localDb = {
   },
   async createMedicamento(data: any) {
     const db = await readDb();
+    const duplicate = db.medicamentos.some(
+      (med) =>
+        med.id !== Number(data.id) &&
+        med.nombre.trim().toLowerCase() === String(data.nombre || "").trim().toLowerCase() &&
+        med.lote.trim().toLowerCase() === String(data.lote || "").trim().toLowerCase(),
+    );
+
+    if (duplicate) {
+      throw new Error("Ya existe un medicamento con el mismo nombre y lote.");
+    }
+
     const categoria = db.categorias.find((item) => item.id === Number(data.categoriaId)) ?? db.categorias[0];
     const proveedor = db.proveedores.find((item) => item.id === Number(data.proveedorId)) ?? db.proveedores[0];
     const medicamento: Medicamento = {
@@ -161,6 +173,17 @@ export const localDb = {
   },
   async updateMedicamento(id: number, data: any) {
     const db = await readDb();
+    const duplicate = db.medicamentos.some(
+      (med) =>
+        med.id !== id &&
+        med.nombre.trim().toLowerCase() === String(data.nombre || "").trim().toLowerCase() &&
+        med.lote.trim().toLowerCase() === String(data.lote || "").trim().toLowerCase(),
+    );
+
+    if (duplicate) {
+      throw new Error("Ya existe un medicamento con el mismo nombre y lote.");
+    }
+
     const categoria = db.categorias.find((item) => item.id === Number(data.categoriaId)) ?? data.categoria;
     const proveedor = db.proveedores.find((item) => item.id === Number(data.proveedorId)) ?? data.proveedor;
     db.medicamentos = db.medicamentos.map((med) =>
@@ -248,8 +271,10 @@ export const localDb = {
     return venta;
   },
   async getStats() {
-    const meds = (await readDb()).medicamentos;
+    const db = await readDb();
+    const meds = db.medicamentos;
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const soon = new Date();
     soon.setDate(today.getDate() + 90);
     const porCaducar = meds.filter((med) => {
@@ -266,8 +291,55 @@ export const localDb = {
     const bajoStock = meds.filter((med) => med.stock > 0 && med.stock < 5).length;
     const agotados = meds.filter((med) => med.stock <= 0).length;
     const valorInventario = meds.reduce((sum, med) => sum + Number(med.stock || 0) * Number(med.precio || 0), 0);
+    const ventasHoy = db.ventas.filter((venta) => {
+      const saleDate = new Date(venta.fecha);
+      saleDate.setHours(0, 0, 0, 0);
+      return saleDate.getTime() === today.getTime();
+    });
+    const ingresosHoy = ventasHoy.reduce((sum, venta) => sum + Number(venta.total || 0), 0);
+    const gananciasHoy = ingresosHoy;
+    const productosVendidos = db.ventas.reduce<Record<string, { nombre: string; cantidad: number; total: number }>>(
+      (acc, venta) => {
+        venta.detalles.forEach((detail) => {
+          const key = String(detail.medicamento.id);
+          acc[key] = acc[key] ?? {
+            nombre: detail.medicamento.nombre,
+            cantidad: 0,
+            total: 0,
+          };
+          acc[key].cantidad += Number(detail.cantidad || 0);
+          acc[key].total += Number(detail.total || 0);
+        });
+        return acc;
+      },
+      {},
+    );
+    const productosMasVendidos = Object.values(productosVendidos)
+      .sort((a, b) => b.cantidad - a.cantidad)
+      .slice(0, 5);
+    const alertasActivas = buildInventoryAlerts(meds, db.ventas).length;
 
-    return { total: meds.length, porCaducar, caducados, porCategoria, bajoStock, agotados, valorInventario };
+    return {
+      total: meds.length,
+      porCaducar,
+      caducados,
+      porCategoria,
+      bajoStock,
+      agotados,
+      valorInventario,
+      ventasHoy: ventasHoy.length,
+      ingresosHoy,
+      gananciasHoy,
+      productosMasVendidos,
+      alertasActivas,
+    };
+  },
+  async getAlerts() {
+    const db = await readDb();
+    return buildInventoryAlerts(db.medicamentos, db.ventas);
+  },
+  async getVentas() {
+    return (await readDb()).ventas;
   },
   async getDocuments() {
     const db = await readDb();

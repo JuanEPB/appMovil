@@ -318,6 +318,34 @@ export const DashboardScreen = () => {
             icon="trending-down"
             tone="warning"
           />
+
+          <MetricCard
+            title="Ventas hoy"
+            value={stats.ventasHoy ?? 0}
+            icon="shopping-cart"
+            tone="success"
+          />
+
+          <MetricCard
+            title="Ingresos hoy"
+            value={formatCurrency(stats.ingresosHoy ?? 0)}
+            icon="credit-card"
+            tone="success"
+          />
+
+          <MetricCard
+            title="Ganancia hoy"
+            value={formatCurrency(stats.gananciasHoy ?? 0)}
+            icon="trending-up"
+            tone="primary"
+          />
+
+          <MetricCard
+            title="Alertas activas"
+            value={stats.alertasActivas ?? statusRows.reduce((total, item) => total + item.value, 0)}
+            icon="bell"
+            tone="danger"
+          />
         </View>
 
         <View
@@ -575,6 +603,30 @@ export const DashboardScreen = () => {
                 {stockRisk}
               </Text>
             </View>
+
+            <View style={styles.valueDivider} />
+
+            <Text style={styles.valueLabel}>
+              Productos mas vendidos
+            </Text>
+
+            {(stats.productosMasVendidos ?? []).length > 0 ? (
+              (stats.productosMasVendidos ?? []).slice(0, 5).map((product) => (
+                <View key={product.nombre} style={styles.valueFooter}>
+                  <Text style={styles.valueFooterLabel} numberOfLines={1}>
+                    {product.nombre}
+                  </Text>
+
+                  <Text style={styles.valueFooterValue}>
+                    {product.cantidad}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.valueDescription}>
+                Todavia no hay ventas registradas para ranking.
+              </Text>
+            )}
           </View>
         </View>
       </ScrollView>
