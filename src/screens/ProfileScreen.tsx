@@ -1,7 +1,10 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
+  ActivityIndicator,
+  Alert,
   Easing,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,10 +15,119 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import Feather from "@expo/vector-icons/Feather";
 import { useNavigation } from "@react-navigation/native";
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
 import { SafeAreaView } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { apiPharma } from "../api/apiPharma";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../context/ThemeContext";
+import { isDemoToken } from "../data/localDb";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
+
+declare const window: any;
+
+type ScheduleDay = {
+  dia: string;
+  entrada: string;
+  salida: string;
+  descanso?: boolean;
+};
+
+const demoSchedule: ScheduleDay[] = [
+  { dia: "Lunes", entrada: "08:00", salida: "16:00" },
+  { dia: "Martes", entrada: "08:00", salida: "16:00" },
+  { dia: "Miercoles", entrada: "08:00", salida: "16:00" },
+  { dia: "Jueves", entrada: "08:00", salida: "16:00" },
+  { dia: "Viernes", entrada: "08:00", salida: "16:00" },
+  { dia: "Sabado", entrada: "09:00", salida: "14:00" },
+  { dia: "Domingo", entrada: "-", salida: "-", descanso: true },
+];
+
+const normalizeSchedule = (data: any): ScheduleDay[] => {
+  const source = Array.isArray(data) ? data : data?.horarios;
+  if (!Array.isArray(source)) return demoSchedule;
+
+  return source.map((item: any) => ({
+    dia: String(item.dia ?? item.day ?? "Dia"),
+    entrada: String(item.entrada ?? item.hora_entrada ?? item.start ?? "-"),
+    salida: String(item.salida ?? item.hora_salida ?? item.end ?? "-"),
+    descanso: Boolean(item.descanso ?? item.rest),
+  }));
+};
+
+const buildScheduleHtml = ({
+  user,
+  schedule,
+}: {
+  user: NonNullable<ReturnType<typeof useAuth>["user"]>;
+  schedule: ScheduleDay[];
+}) => `
+  <html>
+    <head>
+      <meta charset="utf-8" />
+      <style>
+        body { font-family: Arial, sans-serif; color: #111827; padding: 28px; }
+        h1 { margin: 0; color: #0F74BC; font-size: 26px; }
+        .meta { color: #6B7280; margin: 6px 0 22px; }
+        .card { border: 1px solid #E5E7EB; border-radius: 12px; padding: 18px; margin-bottom: 18px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; background: #F3F4F6; color: #374151; }
+        th, td { border-bottom: 1px solid #E5E7EB; padding: 12px; font-size: 14px; }
+        .rest { color: #DC2626; font-weight: 700; }
+        .footer { margin-top: 22px; font-size: 12px; color: #6B7280; }
+      </style>
+    </head>
+    <body>
+      <h1>Horario de entrada</h1>
+      <p class="meta">PharmaControl - ${new Date().toLocaleDateString("es-MX")}</p>
+      <div class="card">
+        <strong>${user.nombre} ${user.apellido}</strong><br />
+        ${user.email}<br />
+        Rol: ${user.rol || "Usuario"} | Farmacia: #${user.farmacia_id ?? "-"}
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Dia</th>
+            <th>Entrada</th>
+            <th>Salida</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${schedule
+            .map(
+              (item) => `
+                <tr>
+                  <td>${item.dia}</td>
+                  <td>${item.entrada}</td>
+                  <td>${item.salida}</td>
+                  <td class="${item.descanso ? "rest" : ""}">${item.descanso ? "Descanso" : "Programado"}</td>
+                </tr>
+              `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+      <p class="footer">Documento generado desde el perfil del usuario.</p>
+    </body>
+  </html>
+`;
+
+const printScheduleOnWeb = (html: string) => {
+  if (Platform.OS !== "web" || typeof window === "undefined") return false;
+
+  const printWindow = window.open("", "_blank", "width=900,height=1100");
+  if (!printWindow) return false;
+
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.onload = () => printWindow.print();
+  return true;
+};
 
 export const ProfileScreen = () => {
   const { theme } = useTheme();
@@ -25,6 +137,7 @@ export const ProfileScreen = () => {
   const navigation = useNavigation<any>();
   const { user, logout } = useAuth();
   const scale = useRef(new Animated.Value(0.92)).current;
+  const [downloadingSchedule, setDownloadingSchedule] = useState(false);
 
   useEffect(() => {
     Animated.timing(scale, {
@@ -42,6 +155,44 @@ export const ProfileScreen = () => {
       </SafeAreaView>
     );
   }
+
+  const downloadSchedule = async () => {
+    try {
+      setDownloadingSchedule(true);
+      const token = await AsyncStorage.getItem("token");
+      let schedule = demoSchedule;
+
+      if (token && !isDemoToken(token)) {
+        const response = await apiPharma.get("/api/usuarios/me/horarios");
+        schedule = normalizeSchedule(response.data);
+      }
+
+      const html = buildScheduleHtml({ user, schedule });
+
+      if (printScheduleOnWeb(html)) {
+        return;
+      }
+
+      const pdf = await Print.printToFileAsync({ html });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(pdf.uri, {
+          mimeType: "application/pdf",
+          dialogTitle: "Descargar horario",
+        });
+        return;
+      }
+
+      await Print.printAsync({ html });
+    } catch {
+      Alert.alert(
+        "Horario no disponible",
+        "No se pudo descargar el horario desde el backend. Intentalo nuevamente.",
+      );
+    } finally {
+      setDownloadingSchedule(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -85,6 +236,21 @@ export const ProfileScreen = () => {
           >
             <Ionicons name="create-outline" size={20} color="#fff" />
             <Text style={styles.primaryButtonText}>Editar perfil</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.primaryButton, { backgroundColor: theme.colors.success }]}
+            onPress={downloadSchedule}
+            disabled={downloadingSchedule}
+          >
+            {downloadingSchedule ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="download-outline" size={20} color="#fff" />
+            )}
+            <Text style={styles.primaryButtonText}>
+              {downloadingSchedule ? "Preparando..." : "Descargar horario"}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.secondaryButton} onPress={logout}>
