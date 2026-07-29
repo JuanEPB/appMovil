@@ -14,8 +14,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { HeaderMenu } from "../components/HeaderMenu";
 import { SuccessModal } from "../components/SuccessModal";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../hooks/useAuth";
 import { isDemoToken, localDb } from "../data/localDb";
 import { Medicamento } from "../interfaces/interface";
+import { checkConnection } from "../utils/network";
+import { offlineQueue } from "../utils/offlineQueue";
+import { canRegisterSales } from "../utils/permissions";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
 import { tw } from "../themes/tailwindTokens";
 
@@ -23,6 +27,7 @@ type Cart = Record<number, number>;
 
 export const SalesScreen = () => {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const { width } = useWindowDimensions();
   const layout = getLayout(width);
   const styles = useMemo(() => getStyles(theme, layout.isPhone), [theme, layout.isPhone]);
@@ -31,11 +36,15 @@ export const SalesScreen = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
 
   const load = async () => {
     setLoading(true);
     const token = await AsyncStorage.getItem("token");
-    if (isDemoToken(token)) setMedicamentos(await localDb.getMedicamentos());
+    const demo = isDemoToken(token);
+    setIsDemo(demo);
+    if (demo) setMedicamentos(await localDb.getMedicamentos());
     setLoading(false);
   };
 
@@ -58,11 +67,42 @@ export const SalesScreen = () => {
   const submit = async () => {
     if (!items.length) return;
     setSaving(true);
-    await localDb.createVenta(items.map((med) => ({ medicamentoId: med.id, cantidad: cart[med.id] })));
-    setCart({});
-    await load();
-    setSaving(false);
-    setSuccess(true);
+    setNotice(null);
+
+    try {
+      if (!canRegisterSales(user)) {
+        setNotice("Tu usuario no tiene permiso para registrar ventas.");
+        return;
+      }
+
+      const payload = items.map((med) => ({
+        medicamentoId: med.id,
+        cantidad: cart[med.id],
+      }));
+
+      if (isDemo) {
+        await localDb.createVenta(payload);
+        setCart({});
+        await load();
+        setSuccess(true);
+        return;
+      }
+
+      const online = await checkConnection();
+
+      if (!online) {
+        await offlineQueue.add("venta", payload);
+        setCart({});
+        setNotice("Sin conexion: la venta quedo pendiente y no se desconto stock real.");
+        return;
+      }
+
+      setNotice("Venta real pendiente de conectar al endpoint del backend.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "No se pudo registrar la venta.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -95,6 +135,13 @@ export const SalesScreen = () => {
             <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
           </View>
         </View>
+
+        {notice ? (
+          <View style={styles.noticeBox}>
+            <Feather name="info" size={16} color={theme.colors.warning} />
+            <Text style={styles.noticeText}>{notice}</Text>
+          </View>
+        ) : null}
 
         <View style={[styles.grid, { gap: layout.gap }]}>
           <View style={styles.productsPanel}>
@@ -199,6 +246,8 @@ const getStyles = (theme: any, isPhone: boolean) =>
     totalLine: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", backgroundColor: tw.colors.sky50, borderRadius: 14, padding: 14, marginTop: 14 },
     totalLineLabel: { color: tw.colors.slate700, fontWeight: "800" },
     totalLineValue: { color: tw.colors.blue600, fontSize: 22, fontWeight: "800" },
+    noticeBox: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.card, borderRadius: 12, padding: 12, marginBottom: 14 },
+    noticeText: { flex: 1, color: theme.colors.text, fontSize: 13, fontWeight: "700" },
     submitButton: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: theme.colors.primary, borderRadius: 12, marginTop: 14 },
     submitText: { color: "#fff", fontSize: 15, fontWeight: "800" },
   });

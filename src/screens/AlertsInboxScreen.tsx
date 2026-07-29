@@ -29,6 +29,7 @@ import { checkConnection } from "../utils/network";
 
 type AlertItem = {
   id?: number | string;
+  tipo?: string;
   nombre?: string;
   lote?: string;
   estado?: string;
@@ -39,10 +40,41 @@ type AlertItem = {
   recomendacion?: string;
 };
 
+type AlertTab = "Stock" | "Caducidad" | "Ventas";
+
+const RESOLVED_ALERTS_KEY = "pharma_resolved_alerts";
+const ALERT_TABS: AlertTab[] = ["Stock", "Caducidad", "Ventas"];
+
 const statusColor = (theme: any, status?: string) => {
   if (status === "CADUCADO" || status === "AGOTADO") return theme.colors.danger;
   if (status === "CRITICO" || status === "PRECAUCION") return theme.colors.warning;
   return theme.colors.primary;
+};
+
+const getAlertKey = (alert: AlertItem, index: number) =>
+  String(alert.id ?? `${alert.tipo ?? alert.estado ?? "alert"}-${alert.nombre ?? index}`);
+
+const getAlertTab = (alert: AlertItem): AlertTab => {
+  const type = String(alert.tipo || alert.estado || "").toUpperCase();
+  if (type.includes("CADUC")) return "Caducidad";
+  if (type.includes("VENTA")) return "Ventas";
+  return "Stock";
+};
+
+const getPriority = (alert: AlertItem): "Alta" | "Media" | "Baja" => {
+  const status = String(alert.estado || "").toUpperCase();
+  const days = Number(alert.dias_para_caducar);
+  const stock = Number(alert.stock);
+
+  if (["CADUCADO", "AGOTADO", "CRITICO"].includes(status) || days < 0 || stock <= 0) {
+    return "Alta";
+  }
+
+  if (status === "PRECAUCION" || days <= 30 || stock < 5) {
+    return "Media";
+  }
+
+  return "Baja";
 };
 
 const printReportOnWeb = (html: string) => {
@@ -74,6 +106,13 @@ export const AlertsInboxScreen = () => {
   const [registeringPush, setRegisteringPush] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sourceLabel, setSourceLabel] = useState("backend");
+  const [activeTab, setActiveTab] = useState<AlertTab>("Stock");
+  const [resolvedIds, setResolvedIds] = useState<string[]>([]);
+
+  const loadResolved = useCallback(async () => {
+    const stored = await AsyncStorage.getItem(RESOLVED_ALERTS_KEY);
+    setResolvedIds(stored ? JSON.parse(stored) : []);
+  }, []);
 
   const loadAlerts = useCallback(async () => {
     try {
@@ -114,8 +153,16 @@ export const AlertsInboxScreen = () => {
   }, []);
 
   useEffect(() => {
+    void loadResolved();
     void loadAlerts();
-  }, [loadAlerts]);
+  }, [loadAlerts, loadResolved]);
+
+  const resolveAlert = async (alert: AlertItem, index: number) => {
+    const key = getAlertKey(alert, index);
+    const next = Array.from(new Set([...resolvedIds, key]));
+    setResolvedIds(next);
+    await AsyncStorage.setItem(RESOLVED_ALERTS_KEY, JSON.stringify(next));
+  };
 
   const exportLowStockPdf = async () => {
     try {
@@ -184,6 +231,10 @@ export const AlertsInboxScreen = () => {
   const lowStockCount = alerts.filter((alert) =>
     ["AGOTADO", "CRITICO", "PRECAUCION"].includes(String(alert.estado || "")),
   ).length;
+  const activeAlerts = alerts.filter(
+    (alert, index) => !resolvedIds.includes(getAlertKey(alert, index)),
+  );
+  const visibleAlerts = activeAlerts.filter((alert) => getAlertTab(alert) === activeTab);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -211,7 +262,7 @@ export const AlertsInboxScreen = () => {
 
         <View style={[styles.actions, { gap: layout.gap }]}>
           <View style={styles.metric}>
-            <Text style={styles.metricValue}>{alerts.length}</Text>
+            <Text style={styles.metricValue}>{activeAlerts.length}</Text>
             <Text style={styles.metricLabel}>alertas activas ({sourceLabel})</Text>
           </View>
           <View style={styles.metric}>
@@ -246,6 +297,31 @@ export const AlertsInboxScreen = () => {
           </Pressable>
         </View>
 
+        <View style={styles.tabs}>
+          {ALERT_TABS.map((tab) => {
+            const count = activeAlerts.filter((alert) => getAlertTab(alert) === tab).length;
+            const selected = activeTab === tab;
+
+            return (
+              <Pressable
+                key={tab}
+                onPress={() => setActiveTab(tab)}
+                style={[
+                  styles.tab,
+                  {
+                    borderColor: selected ? theme.colors.primary : theme.colors.border,
+                    backgroundColor: selected ? theme.colors.primary : theme.colors.card,
+                  },
+                ]}
+              >
+                <Text style={[styles.tabText, { color: selected ? "#FFFFFF" : theme.colors.text }]}>
+                  {tab} ({count})
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         {loading ? (
           <View style={styles.center}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -256,7 +332,7 @@ export const AlertsInboxScreen = () => {
             <Feather name="alert-triangle" size={22} color={theme.colors.danger} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
-        ) : alerts.length === 0 ? (
+        ) : activeAlerts.length === 0 ? (
           <View style={styles.empty}>
             <Feather name="check-circle" size={28} color={theme.colors.success} />
             <Text style={styles.emptyTitle}>Sin alertas activas</Text>
@@ -264,10 +340,19 @@ export const AlertsInboxScreen = () => {
               El inventario no tiene bajo stock ni caducidades urgentes.
             </Text>
           </View>
+        ) : visibleAlerts.length === 0 ? (
+          <View style={styles.empty}>
+            <Feather name="check-circle" size={28} color={theme.colors.success} />
+            <Text style={styles.emptyTitle}>Sin alertas en {activeTab}</Text>
+            <Text style={styles.emptyText}>
+              Las alertas de esta seccion ya fueron resueltas o revisadas.
+            </Text>
+          </View>
         ) : (
           <View style={[styles.grid, { gap: layout.gap }]}>
-            {alerts.map((alert, index) => {
+            {visibleAlerts.map((alert, index) => {
               const color = statusColor(theme, alert.estado);
+              const priority = getPriority(alert);
 
               return (
                 <View
@@ -284,6 +369,11 @@ export const AlertsInboxScreen = () => {
                   </View>
 
                   <Text style={styles.cardTitle}>{alert.nombre || "Medicamento"}</Text>
+
+                  <View style={styles.priorityRow}>
+                    <Feather name="flag" size={13} color={color} />
+                    <Text style={[styles.priorityText, { color }]}>Prioridad {priority}</Text>
+                  </View>
 
                   <View style={styles.stockRow}>
                     <View>
@@ -305,6 +395,14 @@ export const AlertsInboxScreen = () => {
                   <Text style={styles.recommendation}>
                     {alert.recomendacion || "Revisar este medicamento."}
                   </Text>
+
+                  <Pressable
+                    onPress={() => resolveAlert(alert, index)}
+                    style={({ pressed }) => [styles.resolveButton, pressed && styles.pressed]}
+                  >
+                    <Feather name="check" size={15} color="#FFFFFF" />
+                    <Text style={styles.resolveButtonText}>Resolver alerta</Text>
+                  </Pressable>
                 </View>
               );
             })}
@@ -364,6 +462,23 @@ const getStyles = (theme: any, isPhone: boolean) =>
       flexWrap: "wrap",
       alignItems: "stretch",
       marginBottom: 16,
+    },
+    tabs: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginBottom: 16,
+    },
+    tab: {
+      minHeight: 38,
+      borderRadius: 8,
+      borderWidth: 1,
+      justifyContent: "center",
+      paddingHorizontal: 12,
+    },
+    tabText: {
+      fontSize: 13,
+      fontWeight: "800",
     },
     metric: {
       flexGrow: 1,
@@ -523,6 +638,31 @@ const getStyles = (theme: any, isPhone: boolean) =>
       fontSize: 13,
       lineHeight: 19,
       marginTop: 12,
+    },
+    priorityRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginTop: 8,
+    },
+    priorityText: {
+      fontSize: 12,
+      fontWeight: "800",
+    },
+    resolveButton: {
+      minHeight: 40,
+      marginTop: 12,
+      borderRadius: 8,
+      backgroundColor: theme.colors.primary,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 7,
+    },
+    resolveButtonText: {
+      color: "#FFFFFF",
+      fontSize: 13,
+      fontWeight: "800",
     },
     pressed: { opacity: 0.78 },
   });

@@ -14,6 +14,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiPharma } from "../api/apiPharma";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../hooks/useAuth";
 import { SuccessModal } from "../components/SuccessModal";
 import { FadeSlideIn as Fade } from "../components/FadeSlideIn";
 import { Categoria, Proveedor } from "../interfaces/interface";
@@ -24,9 +25,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { getLayout, shadow, webMaxWidthStyle } from "../utils/responsive";
 import { isDemoToken, localDb } from "../data/localDb";
+import { canManageInventory } from "../utils/permissions";
 
 export const FormMedicament = () => {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const editing = route.params?.medicamento;
@@ -131,6 +134,12 @@ export const FormMedicament = () => {
     try {
       setSaving(true);
       setFormError(null);
+
+      if (!canManageInventory(user)) {
+        setFormError("Tu usuario no tiene permiso para modificar inventario.");
+        return;
+      }
+
       const validationError = await validateForm();
 
       if (validationError) {
