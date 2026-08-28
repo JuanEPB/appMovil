@@ -139,7 +139,8 @@ INSERT INTO `proveedores` (`nombre`, `contacto`, `direccion`, `id`) VALUES
 
 INSERT INTO `usuarios` (`nombre`, `apellido`, `rol`, `email`, `contraseña`, `id`) VALUES
 ('Admin', 'Demo', 'admin', 'admin@pharmacontrol.demo', '$2b$10$KIXrJpD7KN4BQybMP1xav.j55cGfJBHk9GXMPMqpwcZyirPXUM9Hm', 1),
-('user', 'demo', 'usuario', 'user@example.com', 'ea2e15f6537370c4e42e6f7d736efce5ddb28e08c880faff6a5d68ae34708161', 2);
+('user', 'demo', 'usuario', 'user@example.com', 'ea2e15f6537370c4e42e6f7d736efce5ddb28e08c880faff6a5d68ae34708161', 2),
+('Areli', 'De Jesus', 'admin', 'al222210556@gmail.com', '$2b$10$8tGUfQzddOUo2ThPdAOOYe7rF5l9Y8mPruN8P98lDfF/Tts49m5dC', 3);
 
 INSERT INTO `medicamentos`
 (`nombre`, `lote`, `caducidad`, `stock`, `precio`, `proveedorId`, `categoriaId`, `id`) VALUES

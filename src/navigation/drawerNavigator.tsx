@@ -10,9 +10,18 @@ import { MedicamentosScreen } from "../screens/MedicamentosScreen";
 import { FormMedicament } from "../screens/FormMedicament";
 import { CalendarScreen } from "../screens/CalendarScreen";
 import { EditProfileScreen } from "../screens/EditProfileScreen";
+import { SalesScreen } from "../screens/SalesScreen";
+import { PredictiveDashboardScreen } from "../screens/PredictiveDashboardScreen";
+import { AICenterScreen } from "../screens/AICenterScreen";
+import { LearningReviewScreen } from "../screens/LearningReviewScreen";
+import { AlertsInboxScreen } from "../screens/AlertsInboxScreen";
 
 export type RootDrawerParamList = {
   Dashboard: undefined;
+  AICenter: undefined;
+  LearningReview: undefined;
+  AlertsInbox: undefined;
+  PredictiveDashboard: undefined;
   Documents: undefined;
   Chat: undefined;
   Profile: undefined;
@@ -21,6 +30,7 @@ export type RootDrawerParamList = {
   FormMedicament: undefined;
   Calendar: undefined;
   EditUser: undefined;
+  Sales: undefined;
 };
 
 const Drawer = createDrawerNavigator<RootDrawerParamList>();
@@ -37,7 +47,12 @@ export const DrawerNavigator = () => {
       drawerContent={(props) => <Sidebar {...props} />}
     >
       <Drawer.Screen name="Dashboard" component={DashboardScreen} />
+      <Drawer.Screen name="AICenter" component={AICenterScreen} />
+      <Drawer.Screen name="AlertsInbox" component={AlertsInboxScreen} />
+      <Drawer.Screen name="LearningReview" component={LearningReviewScreen} />
+      <Drawer.Screen name="PredictiveDashboard" component={PredictiveDashboardScreen} />
       <Drawer.Screen name="Documents" component={DocumentsScreen} />
+      <Drawer.Screen name="Sales" component={SalesScreen} />
       <Drawer.Screen
           name="Calendar"
           component={CalendarScreen}
